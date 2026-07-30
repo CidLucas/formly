@@ -18,6 +18,9 @@ dependencies = [
     # libs do monorepo (instalar em editable mode):
     # pip install -e ../../monorepo/libs/blu_auth
     # pip install -e ../../monorepo/libs/blu_supabase_client
+    # pip install -e ../../monorepo/libs/blu_llm_service
+    "langchain-core>=0.3",
+    "langchain-openai>=0.3",
 ]
 
 [project.optional-dependencies]
