@@ -179,10 +179,10 @@ Supabase          Vercel + Railway     formly.app         Monitoramento
 | D3 | ✅ Blu DS (CSS tokens) | Lucas — 2026-07-30 |
 | D4 | ✅ Componentes custom com Blu DS + Zustand + React Query (padrão Blu V3) | Lucas — 2026-07-30 |
 | D5 | **Hospedagem S3:** AWS S3 ou Cloudflare R2? | Custo, latência, egress | Fase 1 |
-| D6 | **LLM padrão:** OCI GenAI (Llama) ou Groq? | Custo, qualidade, velocidade | Fase 1 |
-| D7 | **Precificação final:** valores Free/Pro/Business | Stripe, landing page | Fase 2 |
-| D8 | **E-mails:** Resend ou outro provider? | Template, custo, entregabilidade | Fase 2 |
-| D9 | **Monorepo ou polyrepo:** front + back no mesmo repo? | CI/CD, tooling | Fase 0 |
+| D6 | ✅ DeepSeek Flash (LLM padrão) | Lucas — 2026-07-30 |
+| D7 | **Precificação final:** valores Free/Pro/Business | Stripe, landing page | Após Fase 0 |
+| D8 | ✅ Resend (e-mail transacional) | Lucas — 2026-07-30 |
+| D9 | ✅ Monorepo: `apps/formly_app` + `services/formly` | Lucas — 2026-07-30 |
 
 ---
 

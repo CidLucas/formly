@@ -1,0 +1,58 @@
+/* Blu DS tokens — placeholder (carregar do CDN no index.html) */
+:root {
+  --bg: #0a0a0f;
+  --surface: #13131a;
+  --glass: rgba(255,255,255,0.04);
+  --fg: #e4e4ec;
+  --mu: #6b6b80;
+  --mu2: #8b8ba0;
+  --ac: #8c5fdb;
+  --ac-hi: #a78bfa;
+  --ac-grad: linear-gradient(135deg, #8c5fdb, #6d28d9);
+  --urg: #ef4444;
+  --att: #f59e0b;
+  --ok: #10b981;
+  --teal: #14b8a6;
+  --gb: rgba(255,255,255,0.08);
+  --gb2: rgba(255,255,255,0.12);
+  --r: 8px;
+  --rl: 12px;
+  --font-body: 'Inter', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  --shadow-1: 0 1px 3px rgba(0,0,0,0.3);
+  --shadow-3: 0 8px 24px rgba(0,0,0,0.4);
+  --odim: rgba(16,185,129,0.1);
+  --adim: rgba(140,95,219,0.1);
+  --udim: rgba(239,68,68,0.1);
+  --adm2: rgba(245,158,11,0.1);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--fg);
+  background: var(--bg);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: var(--ac);
+  text-decoration: none;
+}
+
+a:hover {
+  color: var(--ac-hi);
+}
+
+#root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
