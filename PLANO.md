@@ -28,7 +28,7 @@ WORKSTREAM D: Infra / DevOps (Vercel, Railway, CI/CD)
 | # | O quê | Workstream | Status |
 |---|---|---|---|
 | 0.1 | Criar repo `CidLucas/formly` | D | ✅ |
-| 0.2 | Bootstrap Next.js App Router + Tailwind + shadcn/ui | A | 🔴 |
+| 0.2 | Bootstrap Vite + React 18 + Blu DS tokens | A | 🔴 |
 | 0.3 | Bootstrap FastAPI + estrutura de pastas | B | 🔴 |
 | 0.4 | Setup Supabase (projeto + banco + auth) | B + D | 🔴 |
 | 0.5 | Rodar migration inicial (schema: surveys, questions) | B | 🔴 |
@@ -176,10 +176,8 @@ Supabase          Vercel + Railway     formly.app         Monitoramento
 
 | # | Decisão | Impacto | Bloqueia |
 |---|---|---|---|
-| D1 | **Nome final do produto:** Formly? Outro? | Domínio, branding, landing page | Fase 2 |
-| D2 | **Domínio:** formly.app? formly.com.br? | Disponibilidade, SEO, custo | Fase 2 |
-| D3 | **Design System:** Blu DS existente ou design próprio? | Componentes, temas, brand kit | Fase 1 |
-| D4 | **Componentes de UI:** shadcn/ui? Radix? Outro? | Velocidade de build, customização | Fase 0 |
+| D3 | ✅ Blu DS (CSS tokens) | Lucas — 2026-07-30 |
+| D4 | ✅ Componentes custom com Blu DS + Zustand + React Query (padrão Blu V3) | Lucas — 2026-07-30 |
 | D5 | **Hospedagem S3:** AWS S3 ou Cloudflare R2? | Custo, latência, egress | Fase 1 |
 | D6 | **LLM padrão:** OCI GenAI (Llama) ou Groq? | Custo, qualidade, velocidade | Fase 1 |
 | D7 | **Precificação final:** valores Free/Pro/Business | Stripe, landing page | Fase 2 |
@@ -190,9 +188,9 @@ Supabase          Vercel + Railway     formly.app         Monitoramento
 
 ## 🎯 Próximos passos imediatos (esta semana)
 
-1. [ ] **Lucas** — decidir D3 (Design System) e D4 (lib de componentes UI)
+1. [ ] **Lucas** — ~~D3 e D4~~ ✅ decididos: Blu DS + componentes custom (padrão Blu V3)
 2. [ ] **Lucas** — decidir D9 (monorepo ou polyrepo?)
-3. [ ] **Hermes** — bootstrap frontend com Next.js App Router (após decisão D4)
+3. [ ] **Hermes** — bootstrap frontend com Vite + React 18 + Blu DS tokens
 4. [ ] **Hermes** — bootstrap backend com FastAPI + SQLAlchemy
 5. [ ] **Hermes** — criar projeto Supabase + migration inicial
 6. [ ] **Hermes** — implementar CRUD surveys + página pública mínima
