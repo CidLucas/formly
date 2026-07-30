@@ -1,28 +1,22 @@
-from fastapi import Depends, HTTPException, Request
-from supabase import create_client, Client
-from app.config import SUPABASE_URL, SUPABASE_KEY
+"""
+Auth dependency — wrapper sobre blu_auth para o Formly.
 
-def get_supabase() -> Client:
-    """Retorna cliente Supabase (admin — usar com cuidado)."""
-    return create_client(SUPABASE_URL, SUPABASE_KEY)
+Usa `get_auth_result` do blu_auth.fastapi.dependencies que:
+- Valida JWT do Supabase
+- Retorna AuthResult com client_id (UUID), email, auth_method
+"""
+from uuid import UUID
 
-async def get_current_user(request: Request) -> dict:
-    """Extrai usuário autenticado do token JWT no header Authorization."""
-    auth_header = request.headers.get("Authorization")
-    if not auth_header or not auth_header.startswith("Bearer "):
-        raise HTTPException(status_code=401, detail="Token não informado")
+from fastapi import Depends
+from blu_auth.fastapi.dependencies import get_auth_result
+from blu_auth.core.models import AuthResult
 
-    token = auth_header.split(" ")[1]
-    supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-    try:
-        user = supabase.auth.get_user(token)
-        if not user or not user.user:
-            raise HTTPException(status_code=401, detail="Token inválido ou expirado")
-        return {"id": user.user.id, "email": user.user.email}
-    except Exception as e:
-        raise HTTPException(status_code=401, detail=f"Falha na autenticação: {str(e)}")
+async def get_user_id(auth: AuthResult = Depends(get_auth_result)) -> str:
+    """Retorna user_id como string para queries SQLAlchemy."""
+    return str(auth.client_id)
 
-# Dependency: injeta user_id em rotas protegidas
-def get_user_id(user: dict = Depends(get_current_user)) -> str:
-    return user["id"]
+
+async def get_user_uuid(auth: AuthResult = Depends(get_auth_result)) -> UUID:
+    """Retorna user_id como UUID (tipado)."""
+    return auth.client_id

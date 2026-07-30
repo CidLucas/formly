@@ -15,6 +15,9 @@ dependencies = [
     "groq>=0.15",
     "httpx>=0.28",
     "python-dotenv>=1.0",
+    # libs do monorepo (instalar em editable mode):
+    # pip install -e ../../monorepo/libs/blu_auth
+    # pip install -e ../../monorepo/libs/blu_supabase_client
 ]
 
 [project.optional-dependencies]
