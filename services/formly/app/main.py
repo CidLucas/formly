@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from app.api import surveys, public, contacts
 
 app = FastAPI(title="Formly", version="0.1.0")
 
@@ -11,12 +12,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Health check
 @app.get("/api/health")
 async def health():
     return {"status": "ok"}
 
-# Rotas serão registradas aqui:
-# from app.api import surveys, public, contacts
-# app.include_router(surveys.router, prefix="/api/surveys")
-# app.include_router(public.router, prefix="/api/public")
-# app.include_router(contacts.router, prefix="/api/contacts")
+# Rotas protegidas (auth required)
+app.include_router(surveys.router, prefix="/api/surveys", tags=["surveys"])
+app.include_router(contacts.router, prefix="/api/contacts", tags=["contacts"])
+
+# Rotas públicas (sem auth)
+app.include_router(public.router, prefix="/api/public", tags=["public"])
