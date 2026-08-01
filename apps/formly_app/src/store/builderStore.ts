@@ -9,10 +9,12 @@ export interface ChatMessage {
 }
 
 interface BuilderState {
+  id: string | null
   title: string
   questions: Question[]
   mode: BuilderMode
   chatMessages: ChatMessage[]
+  setId: (id: string | null) => void
   setTitle: (title: string) => void
   setQuestions: (questions: Question[]) => void
   setMode: (mode: BuilderMode) => void
@@ -25,6 +27,7 @@ interface BuilderState {
 }
 
 const initialState = {
+  id: null as string | null,
   title: '',
   questions: [] as Question[],
   mode: 'chat' as BuilderMode,
@@ -33,6 +36,7 @@ const initialState = {
 
 export const useBuilderStore = create<BuilderState>((set) => ({
   ...initialState,
+  setId: (id) => set({ id }),
   setTitle: (title) => set({ title }),
   setQuestions: (questions) => set({ questions }),
   setMode: (mode) => set({ mode }),

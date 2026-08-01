@@ -41,7 +41,9 @@ function authHeaders(): Record<string, string> {
 
 async function toError(res: Response): Promise<Error> {
   const err = await res.json().catch(() => ({ message: res.statusText }))
-  return new Error(err.message || 'API error')
+  const error = new Error(err.message || 'API error') as Error & { status?: number }
+  error.status = res.status
+  return error
 }
 
 export async function api<T>(path: string, options?: ApiRequestInit): Promise<T> {
