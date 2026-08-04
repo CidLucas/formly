@@ -11,6 +11,8 @@ from fastapi import Depends
 from blu_auth.fastapi.dependencies import get_auth_result
 from blu_auth.core.models import AuthResult
 
+__all__ = ["get_user_id", "get_user_uuid", "get_auth_result", "AuthResult"]
+
 
 async def get_user_id(auth: AuthResult = Depends(get_auth_result)) -> str:
     """Retorna user_id como string para queries SQLAlchemy."""

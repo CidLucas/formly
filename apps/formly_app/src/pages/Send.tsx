@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { ChangeEvent } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { Check, Download } from '@phosphor-icons/react'
-import { contacts, surveys } from '../lib/api'
-import type { Contact, DistributeResult } from '../lib/api'
+import { Download } from '@phosphor-icons/react'
+import { surveys } from '../lib/api'
+import type { DistributeResult } from '../lib/api'
 
 const TOKEN_KEY = 'formly_token'
 
@@ -19,9 +19,6 @@ export default function Send() {
   const [loading, setLoading] = useState(true)
   const [failed, setFailed] = useState(false)
   const [title, setTitle] = useState('…')
-  const [list, setList] = useState<Contact[]>([])
-  const [search, setSearch] = useState('')
-  const [selected, setSelected] = useState<Set<string>>(new Set())
   const [csv, setCsv] = useState<CsvFile | null>(null)
   const [manualInput, setManualInput] = useState('')
   const [manualEmails, setManualEmails] = useState<string[]>([])
@@ -39,9 +36,8 @@ export default function Send() {
     }
     void (async () => {
       try {
-        const [survey, contactList] = await Promise.all([surveys.get(id ?? ''), contacts.list()])
+        const survey = await surveys.get(id ?? '')
         setTitle(survey.title ?? 'Sem título')
-        setList(contactList)
       } catch {
         setFailed(true)
       } finally {
@@ -49,31 +45,6 @@ export default function Send() {
       }
     })()
   }, [id, navigate])
-
-  const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase()
-    if (!q) return list
-    return list.filter(
-      (c) =>
-        (c.name ?? '').toLowerCase().includes(q) ||
-        (c.email ?? '').toLowerCase().includes(q),
-    )
-  }, [list, search])
-
-  const allSelected = list.length > 0 && list.every((c) => selected.has(c.id))
-
-  const toggleContact = (c: Contact) => {
-    setSelected((prev) => {
-      const next = new Set(prev)
-      if (next.has(c.id)) next.delete(c.id)
-      else next.add(c.id)
-      return next
-    })
-  }
-
-  const toggleAll = () => {
-    setSelected(allSelected ? new Set() : new Set(list.map((c) => c.id)))
-  }
 
   const handleCsv = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -112,8 +83,8 @@ export default function Send() {
   const send = async () => {
     if (sending) return
     const csvEmails = csv?.emails ?? []
-    if (selected.size === 0 && csvEmails.length === 0 && manualEmails.length === 0) {
-      setError('Adicione ao menos um e-mail (digite acima, selecione um contato ou importe um CSV)')
+    if (manualEmails.length === 0 && csvEmails.length === 0) {
+      setError('Adicione ao menos um e-mail (digite acima ou importe um CSV)')
       return
     }
     setError('')
@@ -121,7 +92,7 @@ export default function Send() {
     setSending(true)
     try {
       const res = await surveys.distribute(id ?? '', {
-        contact_ids: [...selected],
+        contact_ids: [],
         emails: [...manualEmails, ...csvEmails],
         message,
       })
@@ -176,170 +147,104 @@ export default function Send() {
           </div>
         ) : (
           <>
-            <div className="section-label">Para quem?</div>
-            <input
-              type="text"
-              className="search"
-              placeholder="Buscar contatos..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-
-            {list.length === 0 ? (
+            <div className="section-label">Enviar por e-mail</div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <input
+                type="email"
+                className="search"
+                placeholder="nome@dominio.com"
+                value={manualInput}
+                onChange={(e) => setManualInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault()
+                    addManualEmail()
+                  }
+                }}
+              />
+              <button
+                type="button"
+                className="btn-sm"
+                style={{ flexShrink: 0, alignSelf: 'center' }}
+                onClick={addManualEmail}
+              >
+                + Adicionar
+              </button>
+            </div>
+            {manualEmails.length > 0 && (
               <div
                 style={{
-                  marginTop: 16,
-                  padding: 16,
-                  borderRadius: 'var(--r)',
-                  border: '1.5px dashed var(--line)',
-                  background: 'var(--card)',
-                  color: 'var(--muted)',
-                  fontSize: 13,
-                  textAlign: 'center',
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  gap: 6,
+                  marginTop: 10,
                 }}
               >
-                Nenhum contato ainda — adicione via CSV ou API
+                {manualEmails.map((email) => (
+                  <span
+                    key={email}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      padding: '4px 10px',
+                      borderRadius: 'var(--r)',
+                      background: 'var(--pine-soft)',
+                      border: '1px solid var(--pine)',
+                      color: 'var(--pine)',
+                      fontFamily: 'var(--mono)',
+                      fontSize: '.72rem',
+                    }}
+                  >
+                    {email}
+                    <button
+                      type="button"
+                      onClick={() => removeManualEmail(email)}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        color: 'inherit',
+                        cursor: 'pointer',
+                        fontSize: '.8rem',
+                        lineHeight: 1,
+                        padding: 0,
+                      }}
+                      aria-label={`Remover ${email}`}
+                    >
+                      ×
+                    </button>
+                  </span>
+                ))}
               </div>
-            ) : (
-              <>
-                <div className="select-all" onClick={toggleAll}>
-                  <span className="check">
-                    <Check size={10} weight="bold" />
-                  </span>
-                  <span>
-                    {allSelected ? `Todos (${list.length})` : `Selecionados (${selected.size})`}
-                  </span>
-                </div>
-
-                <div className="contact-list">
-                  {filtered.map((c) => {
-                    const isSel = selected.has(c.id)
-                    return (
-                      <div
-                        key={c.id}
-                        className={`contact ${isSel ? 'selected' : ''}`}
-                        onClick={() => toggleContact(c)}
-                      >
-                        <span className="check">
-                          {isSel ? <Check size={10} weight="bold" /> : null}
-                        </span>
-                        <span
-                          style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
-                        >
-                          {c.email ?? c.name}
-                        </span>
-                      </div>
-                    )
-                  })}
-                  {filtered.length === 0 && search.trim() && (
-                    <div style={{ padding: '8px 16px', color: 'var(--muted)', fontSize: 13, fontStyle: 'italic' }}>
-                      Nenhum contato encontrado.
-                    </div>
-                  )}
-                </div>
-              </>
             )}
 
             <div className="divider">ou</div>
 
             <div style={{ marginBottom: 'var(--m)' }}>
-              <div className="section-label">E-mail direto</div>
-              <div style={{ display: 'flex', gap: 8 }}>
-                <input
-                  type="email"
-                  className="search"
-                  placeholder="nome@dominio.com"
-                  value={manualInput}
-                  onChange={(e) => setManualInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault()
-                      addManualEmail()
-                    }
-                  }}
-                />
-                <button
-                  type="button"
-                  className="btn-sm"
-                  style={{ flexShrink: 0, alignSelf: 'center' }}
-                  onClick={addManualEmail}
-                >
-                  + Adicionar
-                </button>
+              <div
+                className="csv-zone"
+                onClick={() => fileRef.current?.click()}
+                style={
+                  csv
+                    ? { borderColor: 'var(--pine)', background: 'var(--pine-soft)', color: 'var(--pine)' }
+                    : undefined
+                }
+              >
+                <Download size={16} />
+                <span>
+                  {csv
+                    ? `${csv.name} · ${csv.emails.length} contatos detectados`
+                    : 'Subir arquivo com e-mails (um por linha)'}
+                </span>
               </div>
-              {manualEmails.length > 0 && (
-                <div
-                  style={{
-                    display: 'flex',
-                    flexWrap: 'wrap',
-                    gap: 6,
-                    marginTop: 10,
-                  }}
-                >
-                  {manualEmails.map((email) => (
-                    <span
-                      key={email}
-                      style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: 6,
-                        padding: '4px 10px',
-                        borderRadius: 'var(--r)',
-                        background: 'var(--pine-soft)',
-                        border: '1px solid var(--pine)',
-                        color: 'var(--pine)',
-                        fontFamily: 'var(--mono)',
-                        fontSize: '.72rem',
-                      }}
-                    >
-                      {email}
-                      <button
-                        type="button"
-                        onClick={() => removeManualEmail(email)}
-                        style={{
-                          background: 'none',
-                          border: 'none',
-                          color: 'inherit',
-                          cursor: 'pointer',
-                          fontSize: '.8rem',
-                          lineHeight: 1,
-                          padding: 0,
-                        }}
-                        aria-label={`Remover ${email}`}
-                      >
-                        ×
-                      </button>
-                    </span>
-                  ))}
-                </div>
-              )}
+              <input
+                ref={fileRef}
+                type="file"
+                accept=".csv,text/csv"
+                style={{ display: 'none' }}
+                onChange={handleCsv}
+              />
             </div>
-
-            <div className="divider">ou</div>
-
-            <div
-              className="csv-zone"
-              onClick={() => fileRef.current?.click()}
-              style={
-                csv
-                  ? { borderColor: 'var(--pine)', background: 'var(--pine-soft)', color: 'var(--pine)' }
-                  : undefined
-              }
-            >
-              <Download size={16} />
-              <span>
-                {csv
-                  ? `${csv.name} · ${csv.emails.length} contatos detectados`
-                  : 'Subir arquivo com e-mails (um por linha)'}
-              </span>
-            </div>
-            <input
-              ref={fileRef}
-              type="file"
-              accept=".csv,text/csv"
-              style={{ display: 'none' }}
-              onChange={handleCsv}
-            />
 
             <div style={{ marginTop: 'var(--l)' }}>
               <div className="section-label">Mensagem opcional</div>

@@ -1,16 +1,19 @@
 import os
 import secrets
 from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 from app.db import get_db
-from app.auth import get_user_id
+from app.auth import get_user_id, get_auth_result
 from app.models import Survey, Contact, SurveyStatus
 from pydantic import BaseModel
+from blu_auth.core.models import AuthResult
 
 router = APIRouter()
 
 RESEND_API_KEY = os.getenv("RESEND_API_KEY", "")
+# URL pública do app (domínio de produção ou IP dev) — usada no link do e-mail.
+PUBLIC_URL = os.getenv("FORMLY_PUBLIC_URL", "http://localhost:5173").rstrip("/")
 
 
 class DistributeRequest(BaseModel):
@@ -23,13 +26,13 @@ class DistributeRequest(BaseModel):
 def distribute_survey(
     survey_id: str,
     data: DistributeRequest,
+    request: Request,
     user_id: str = Depends(get_user_id),
+    auth: AuthResult = Depends(get_auth_result),
     db: Session = Depends(get_db),
 ):
-    """Dispara o questionário para os contatos selecionados.
+    """Dispara o questionário para os e-mails selecionados.
 
-    Fase 1 (sem integração SMTP/Resend):
-    - Não há provedor de e-mail configurado por padrão.
     - Se a env var RESEND_API_KEY estiver definida E a lib `resend` estiver
       instalada, tenta o envio real. Caso contrário retorna modo "simulated"
       com o link público como alternativa de distribuição.
@@ -62,6 +65,7 @@ def distribute_survey(
                 recipients.add(c.email)
 
     public_link = f"/s/{survey.slug}"
+    full_link = f"{PUBLIC_URL}{public_link}"
     total = len(recipients)
 
     mode = "real"
@@ -83,7 +87,26 @@ def distribute_survey(
         }
 
     resend.api_key = RESEND_API_KEY
-    email_body = (data.message or "") + f"\n\nResponda em: {public_link}"
+
+    # Remetente: nome exibido = e-mail/usuário logado, senão "Formly".
+    sender_email = getattr(auth, "email", None) or "usuario"
+    sender_name = (sender_email.split("@")[0] or "Alguém").capitalize()
+
+    # Mensagem personalizada (se houver) + contexto + link clicável.
+    parts = []
+    if data.message and data.message.strip():
+        parts.append(f'"{data.message.strip()}"')
+        parts.append("")
+    parts.append(
+        f"Você recebeu um questionário {survey.title or 'Formly'} "
+        f"de {sender_name} ({sender_email})."
+    )
+    parts.append("")
+    parts.append("Para responder, acesse o link abaixo:")
+    parts.append(full_link)
+    email_body = "\n".join(parts)
+
+    subject = f"Questionário: {survey.title or 'Formly'}"
     sent = 0
     failed = 0
     for email in recipients:
@@ -92,7 +115,7 @@ def distribute_survey(
                 {
                     "from": "Formly <onboarding@resend.dev>",
                     "to": [email],
-                    "subject": f"Questionário: {survey.title}",
+                    "subject": subject,
                     "text": email_body,
                 }
             )
