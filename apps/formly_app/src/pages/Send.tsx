@@ -23,6 +23,8 @@ export default function Send() {
   const [search, setSearch] = useState('')
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [csv, setCsv] = useState<CsvFile | null>(null)
+  const [manualInput, setManualInput] = useState('')
+  const [manualEmails, setManualEmails] = useState<string[]>([])
   const [message, setMessage] = useState('')
   const [sending, setSending] = useState(false)
   const [error, setError] = useState('')
@@ -89,11 +91,29 @@ export default function Send() {
     reader.readAsText(file)
   }
 
+  const addManualEmail = () => {
+    const value = manualInput.trim()
+    const ok = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(value)
+    if (!ok) {
+      setError('Digite um e-mail válido (ex: nome@dominio.com)')
+      return
+    }
+    setError('')
+    if (!manualEmails.includes(value.toLowerCase())) {
+      setManualEmails((prev) => [...prev, value.toLowerCase()])
+    }
+    setManualInput('')
+  }
+
+  const removeManualEmail = (email: string) => {
+    setManualEmails((prev) => prev.filter((e) => e !== email))
+  }
+
   const send = async () => {
     if (sending) return
     const csvEmails = csv?.emails ?? []
-    if (selected.size === 0 && csvEmails.length === 0) {
-      setError('Selecione ao menos um contato ou importe um CSV')
+    if (selected.size === 0 && csvEmails.length === 0 && manualEmails.length === 0) {
+      setError('Adicione ao menos um e-mail (digite acima, selecione um contato ou importe um CSV)')
       return
     }
     setError('')
@@ -102,7 +122,7 @@ export default function Send() {
     try {
       const res = await surveys.distribute(id ?? '', {
         contact_ids: [...selected],
-        emails: csvEmails,
+        emails: [...manualEmails, ...csvEmails],
         message,
       })
       setResult(res)
@@ -219,6 +239,81 @@ export default function Send() {
                 </div>
               </>
             )}
+
+            <div className="divider">ou</div>
+
+            <div style={{ marginBottom: 'var(--m)' }}>
+              <div className="section-label">E-mail direto</div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <input
+                  type="email"
+                  className="search"
+                  placeholder="nome@dominio.com"
+                  value={manualInput}
+                  onChange={(e) => setManualInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault()
+                      addManualEmail()
+                    }
+                  }}
+                />
+                <button
+                  type="button"
+                  className="btn-sm"
+                  style={{ flexShrink: 0, alignSelf: 'center' }}
+                  onClick={addManualEmail}
+                >
+                  + Adicionar
+                </button>
+              </div>
+              {manualEmails.length > 0 && (
+                <div
+                  style={{
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    gap: 6,
+                    marginTop: 10,
+                  }}
+                >
+                  {manualEmails.map((email) => (
+                    <span
+                      key={email}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        padding: '4px 10px',
+                        borderRadius: 'var(--r)',
+                        background: 'var(--pine-soft)',
+                        border: '1px solid var(--pine)',
+                        color: 'var(--pine)',
+                        fontFamily: 'var(--mono)',
+                        fontSize: '.72rem',
+                      }}
+                    >
+                      {email}
+                      <button
+                        type="button"
+                        onClick={() => removeManualEmail(email)}
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          color: 'inherit',
+                          cursor: 'pointer',
+                          fontSize: '.8rem',
+                          lineHeight: 1,
+                          padding: 0,
+                        }}
+                        aria-label={`Remover ${email}`}
+                      >
+                        ×
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
 
             <div className="divider">ou</div>
 
