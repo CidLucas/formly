@@ -21,6 +21,13 @@ class DistributeRequest(BaseModel):
     emails: List[str] = []
     message: Optional[str] = None
     from_email: Optional[str] = None
+    from_name: Optional[str] = None
+
+
+def _title_name(raw: str) -> str:
+    """Capitaliza nome derivado de e-mail: 'cid.lucas' → 'Cid Lucas'."""
+    parts = [p for p in raw.replace(".", " ").replace("_", " ").split() if p]
+    return " ".join(p.capitalize() for p in parts) if parts else "Alguém"
 
 
 @router.post("/{survey_id}/distribute")
@@ -89,9 +96,10 @@ def distribute_survey(
 
     resend.api_key = RESEND_API_KEY
 
-    # Remetente: e-mail informado pelo usuário no envio (ou do JWT em dev).
+    # Remetente: nome + e-mail informados pelo usuário (via Google/landing);
+    # fallback: deriva do e-mail do JWT.
     sender_email = (data.from_email or "").strip() or getattr(auth, "email", None) or "usuario"
-    sender_name = (sender_email.split("@")[0] or "Alguém").capitalize()
+    sender_name = (data.from_name or "").strip() or _title_name(sender_email.split("@")[0])
 
     survey_title = survey.title or "Formly"
     message_html = ""
@@ -112,6 +120,7 @@ def distribute_survey(
         </tr>
         <tr>
           <td style="padding:32px;">
+            <p style="font-size:16px;line-height:1.6;color:#1a1a1a;margin:0 0 16px;">Olá!</p>
             {message_html}
             <p style="font-size:15px;line-height:1.6;color:#1a1a1a;margin:0 0 6px;">
               Você recebeu um questionário <strong style="color:#7A2E3F;">{survey_title}</strong>
@@ -150,11 +159,14 @@ def distribute_survey(
 
     # Versão texto (fallback p/ clientes sem HTML).
     email_text = "\n".join([
+        "Olá!",
+        "",
         f'"{data.message.strip()}"' if data.message and data.message.strip() else "",
         "",
         f"Você recebeu um questionário {survey_title} de {sender_name} ({sender_email}).",
         "",
-        "Para responder, acesse:",
+        "Sua opinião é importante — leva menos de 2 minutos.",
+        "",
         full_link,
     ])
 

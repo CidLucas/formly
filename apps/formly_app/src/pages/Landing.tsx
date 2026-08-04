@@ -5,6 +5,7 @@ import { transcribe } from '../lib/api'
 
 const INTENT_KEY = 'formly_intent'
 const EMAIL_KEY = 'formly_email'
+const NAME_KEY = 'formly_name'
 const MAX_REC_SECS = 120 // 2 minutos
 
 const fmtTime = (s: number) => {
@@ -21,6 +22,7 @@ export default function Landing() {
   const [stage, setStage] = useState<'idle' | 'transcribing' | 'review'>('idle')
   const [transcript, setTranscript] = useState('')
   const [email, setEmail] = useState('')
+  const [name, setName] = useState('')
   const [emailErr, setEmailErr] = useState(false)
   const [limitMsg, setLimitMsg] = useState(false)
 
@@ -134,7 +136,10 @@ export default function Landing() {
       return
     }
     setEmailErr(false)
-    if (needsEmail) window.localStorage.setItem(EMAIL_KEY, email.trim())
+    if (needsEmail) {
+      window.localStorage.setItem(EMAIL_KEY, email.trim())
+      window.localStorage.setItem(NAME_KEY, name.trim() || email.split('@')[0] || '')
+    }
     goToBuilder(transcript)
   }
 
@@ -178,6 +183,17 @@ export default function Landing() {
           {needsEmail && (
             <>
               <div className="section-label" style={{ alignSelf: 'flex-start', marginTop: 8 }}>
+                Seu nome
+              </div>
+              <input
+                type="text"
+                className="email-input"
+                style={{ width: '100%', marginBottom: 10 }}
+                placeholder="Como podemos te chamar?"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+              />
+              <div className="section-label" style={{ alignSelf: 'flex-start' }}>
                 Seu e-mail
               </div>
               <input
@@ -207,6 +223,7 @@ export default function Landing() {
                 setStage('idle')
                 setTranscript('')
                 setEmail('')
+                setName('')
               }}
             >
               Refazer
