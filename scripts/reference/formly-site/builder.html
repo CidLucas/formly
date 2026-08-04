@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Formly · Builder</title>
+<style>
+:root {
+  --wine: #7A2E3F; --wine-soft: #F5E8EB; --wine-dark: #5C1E2C;
+  --pine: #3B5B52;
+  --paper: #E7E6E0; --paper2: #F3F2EE; --card: #FCFBF8;
+  --muted: #6E6D66; --line: #C9C7BE;
+  --display: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --body: Georgia, 'Times New Roman', Times, serif;
+  --mono: 'SF Mono', 'Fira Code', monospace;
+  --s: 8px; --m: 16px; --l: 24px; --xl: 40px;
+  --r: 6px; --rl: 12px;
+  --ease: cubic-bezier(.4,0,.2,1);
+  --fast: 150ms; --norm: 250ms;
+  --shadow-card: 0 1px 3px rgba(0,0,0,.06);
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 16px; -webkit-font-smoothing: antialiased; }
+body {
+  font-family: var(--body);
+  color: #1a1a1a;
+  background: var(--paper);
+  min-height: 100vh;
+}
+h1, h2, h3 { font-family: var(--display); font-weight: 600; letter-spacing: -0.02em; }
+.mono { font-family: var(--mono); font-size: 0.75rem; }
+
+.app { max-width: 560px; margin: 0 auto; padding: var(--xl) var(--l); }
+
+.header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding-bottom: var(--m); border-bottom: 1px solid var(--line); margin-bottom: var(--l);
+}
+.header-title { font-size: 1.1rem; font-weight: 600; }
+.header-actions { display: flex; gap: var(--s); }
+
+.btn-sm {
+  padding: 6px 14px; font-family: var(--display); font-size: 0.78rem; font-weight: 500;
+  border-radius: var(--r); cursor: pointer; border: 1.5px solid var(--line);
+  background: var(--card); color: #1a1a1a; transition: all var(--fast) var(--ease);
+}
+.btn-sm:hover { border-color: var(--wine); background: var(--wine-soft); }
+.btn-sm.primary { background: var(--wine); color: #fff; border-color: var(--wine); }
+.btn-sm.primary:hover { background: var(--wine-dark); }
+
+.body { display: flex; flex-direction: column; gap: var(--m); }
+
+/* Question card */
+.q-card {
+  background: var(--card); border: 1.5px solid var(--line); border-radius: var(--rl);
+  padding: var(--l); transition: border var(--fast) var(--ease), box-shadow var(--fast) var(--ease);
+}
+.q-card:hover { border-color: var(--wine); box-shadow: var(--shadow-card); }
+.q-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: var(--m); }
+.q-title { font-family: var(--display); font-size: 1rem; font-weight: 600; color: #1a1a1a; line-height: 1.3; }
+.q-badge {
+  font-family: var(--mono); font-size: 0.6rem; font-weight: 500; text-transform: uppercase;
+  letter-spacing: 0.06em; color: var(--wine); background: var(--wine-soft);
+  padding: 2px 8px; border-radius: 3px; white-space: nowrap; margin-left: var(--m);
+}
+.q-hint { font-family: var(--body); font-size: 0.82rem; color: var(--muted); font-style: italic; margin-bottom: var(--m); }
+
+/* Inputs */
+.input-short {
+  width: 100%; padding: var(--m); font-family: var(--body); font-size: 0.9rem;
+  color: #1a1a1a; background: var(--paper2); border: 1px solid var(--line);
+  border-radius: var(--r); outline: none;
+}
+.input-short:focus { border-color: var(--wine); }
+.input-short::placeholder { color: var(--muted); font-style: italic; }
+
+.textarea-long {
+  width: 100%; min-height: 100px; padding: var(--m); font-family: var(--body);
+  font-size: 0.9rem; color: #1a1a1a; background: var(--paper2);
+  border: 1px solid var(--line); border-radius: var(--r); outline: none; resize: vertical;
+}
+.textarea-long:focus { border-color: var(--wine); }
+
+.q-counter { text-align: right; font-family: var(--mono); font-size: 0.66rem; color: var(--muted); margin-top: 4px; }
+
+.audio-companion { margin-top: var(--m); display: flex; align-items: center; gap: var(--s); font-family: var(--mono); font-size: 0.72rem; color: var(--muted); }
+.audio-companion .rec-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--wine); }
+
+/* Option list */
+.option-list { display: flex; flex-direction: column; gap: 6px; }
+.option-card {
+  display: flex; align-items: center; gap: var(--m); padding: var(--m);
+  background: var(--paper2); border: 1.5px solid var(--line); border-radius: var(--r);
+  cursor: pointer; font-family: var(--body); font-size: 0.9rem; transition: all var(--fast) var(--ease);
+}
+.option-card:hover { border-color: var(--wine); }
+.option-card.selected { border-color: var(--wine); background: var(--wine-soft); }
+
+.radio-dot {
+  width: 18px; height: 18px; border-radius: 50%; border: 2px solid var(--line);
+  background: #fff; flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+  transition: all var(--fast) var(--ease);
+}
+.option-card.selected .radio-dot { border-color: var(--wine); background: var(--wine); }
+.option-card.selected .radio-dot::after { content: ''; width: 6px; height: 6px; border-radius: 50%; background: #fff; }
+
+.checkbox-dot {
+  width: 18px; height: 18px; border-radius: 3px; border: 2px solid var(--line);
+  background: #fff; flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+  font-size: 0.7rem; color: transparent; transition: all var(--fast) var(--ease);
+}
+.option-card.selected .checkbox-dot { border-color: var(--wine); background: var(--wine); color: #fff; }
+
+/* Likert */
+.likert-row { display: flex; align-items: center; justify-content: space-between; gap: 4px; padding: var(--s) 0; }
+.likert-labels { display: flex; justify-content: space-between; font-family: var(--mono); font-size: 0.66rem; color: var(--muted); }
+.likert-dot {
+  width: 32px; height: 32px; border-radius: 50%; border: 2px solid var(--line);
+  background: #fff; cursor: pointer; flex-shrink: 0; transition: all var(--fast) var(--ease);
+}
+.likert-dot:hover { border-color: var(--wine); transform: scale(1.15); }
+.likert-dot.selected { border-color: var(--wine); background: var(--wine); }
+.likert-line { flex: 1; height: 2px; background: var(--line); margin: 0 -2px; }
+.likert-neutral { text-align: center; font-family: var(--mono); font-size: 0.62rem; color: var(--muted); font-style: italic; margin-top: 4px; }
+
+/* NPS */
+.nps-row { display: flex; gap: 2px; justify-content: space-between; }
+.nps-dot {
+  width: 36px; height: 36px; border-radius: 6px; border: 1.5px solid var(--line);
+  background: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center;
+  font-family: var(--mono); font-size: 0.72rem; color: var(--muted); flex-shrink: 0;
+  transition: all var(--fast) var(--ease);
+}
+.nps-dot:hover { border-color: var(--wine); }
+.nps-dot.selected { border-color: var(--wine); background: var(--wine); color: #fff; }
+.nps-labels { display: flex; justify-content: space-between; font-family: var(--mono); font-size: 0.62rem; color: var(--muted); margin-bottom: var(--s); }
+
+/* Ranking */
+.rank-list { display: flex; flex-direction: column; gap: 4px; }
+.rank-item {
+  display: flex; align-items: center; gap: var(--m); padding: var(--m);
+  background: var(--paper2); border: 1.5px solid var(--line); border-radius: var(--r);
+  font-family: var(--body); font-size: 0.9rem; cursor: grab; transition: all var(--fast) var(--ease);
+}
+.rank-item:hover { border-color: var(--wine); }
+.rank-item:active { cursor: grabbing; opacity: .8; }
+.rank-num {
+  width: 22px; height: 22px; border-radius: 50%; background: var(--wine); color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--mono); font-size: 0.62rem; font-weight: 600; flex-shrink: 0;
+}
+.rank-grip { font-family: var(--mono); font-size: 0.8rem; color: var(--muted); flex-shrink: 0; }
+
+@media (max-width: 600px) {
+  .app { padding: var(--l) var(--m); }
+  .nps-row { flex-wrap: wrap; gap: 4px; justify-content: center; }
+  .nps-dot { width: 30px; height: 30px; font-size: 0.65rem; }
+  .likert-dot { width: 26px; height: 26px; }
+}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <div class="header">
+    <div class="header-title">Pesquisa de Clima 2026</div>
+    <div class="header-actions">
+      <button class="btn-sm" onclick="addQuestion()">+ Pergunta</button>
+      <button class="btn-sm primary" onclick="go('send.html')">Enviar →</button>
+    </div>
+  </div>
+
+  <div class="body" id="questions"></div>
+</div>
+
+<script>
+function go(url) { window.location.href = url; }
+
+const samples = [
+  {
+    type: 'TEXTO LONGO', title: 'Qual foi a parte mais irritante do último mês?',
+    hint: 'Uma ou duas frases. Pode escrever, gravar um áudio, ou os dois.',
+    html: `<textarea class="textarea-long" placeholder="Conte do jeito que vier..."></textarea>
+<div class="q-counter">0/400</div>
+<div class="audio-companion"><span class="rec-dot"></span> Gravar áudio · 0:00</div>`
+  },
+  {
+    type: 'MÚLTIPLA [○]', title: 'Seu trabalho é mais...',
+    html: `<div class="option-list">
+      <div class="option-card"><span class="radio-dot"></span> Repetitivo e previsível</div>
+      <div class="option-card selected" onclick="selectRadio(this)"><span class="radio-dot"></span> Um equilíbrio entre os dois</div>
+      <div class="option-card"><span class="radio-dot"></span> Sempre diferente, muito julgamento</div>
+    </div>`
+  },
+  {
+    type: '[✓✓]', title: 'Onde a informação costuma estar?',
+    hint: 'Pode marcar mais de uma.',
+    html: `<div class="option-list">
+      <div class="option-card selected" onclick="toggleCheck(this)"><span class="checkbox-dot">✓</span> Numa pasta / drive</div>
+      <div class="option-card selected" onclick="toggleCheck(this)"><span class="checkbox-dot">✓</span> No Notion ou similar</div>
+      <div class="option-card" onclick="toggleCheck(this)"><span class="checkbox-dot">✓</span> Na cabeça de uma pessoa</div>
+      <div class="option-card" onclick="toggleCheck(this)"><span class="checkbox-dot">✓</span> Em planilhas compartilhadas</div>
+    </div>`
+  },
+  {
+    type: 'ESCALA', title: 'A ferramenta facilitou meu trabalho',
+    html: `<div class="likert-labels"><span>Discordo totalmente</span><span>Concordo totalmente</span></div>
+<div class="likert-row">
+<span class="likert-dot"></span><span class="likert-line"></span>
+<span class="likert-dot"></span><span class="likert-line"></span>
+<span class="likert-dot selected" onclick="selectLikert(this)"></span><span class="likert-line"></span>
+<span class="likert-dot"></span><span class="likert-line"></span>
+<span class="likert-dot"></span>
+</div>
+<div class="likert-neutral">neutro</div>`
+  },
+  {
+    type: 'NPS', title: 'Quanto você recomendaria o Formly?',
+    html: `<div class="nps-labels"><span>Não recomendaria</span><span>Com certeza</span></div>
+<div class="nps-row">${Array.from({length:11}, (_,i) => `<span class="nps-dot${i===8?' selected':''}" onclick="selectNps(this)">${i}</span>`).join('')}</div>`
+  },
+  {
+    type: 'RANKING', title: 'Ordene por prioridade',
+    hint: 'Arraste para reordenar.',
+    html: `<div class="rank-list">
+      <div class="rank-item"><span class="rank-grip">⠿</span><span class="rank-num">1</span> Redução de custo</div>
+      <div class="rank-item"><span class="rank-grip">⠿</span><span class="rank-num">2</span> Velocidade de entrega</div>
+      <div class="rank-item"><span class="rank-grip">⠿</span><span class="rank-num">3</span> Qualidade do output</div>
+      <div class="rank-item"><span class="rank-grip">⠿</span><span class="rank-num">4</span> Autonomia da equipe</div>
+    </div>`
+  }
+];
+
+document.getElementById('questions').innerHTML = samples.map(q => `
+  <div class="q-card">
+    <div class="q-header">
+      <div class="q-title">${q.title}</div>
+      <div class="q-badge">${q.type}</div>
+    </div>
+    ${q.hint ? `<div class="q-hint">${q.hint}</div>` : ''}
+    <div>${q.html}</div>
+  </div>
+`).join('');
+
+// Wire up interactions that need JS
+document.querySelectorAll('.option-card').forEach(card => {
+  if (!card.onclick) {
+    card.addEventListener('click', function() {
+      const parent = this.parentElement;
+      if (parent.classList.contains('option-list')) {
+        // Check if radio (single select) or checkbox (multi)
+        const dots = parent.querySelectorAll('.radio-dot');
+        if (dots.length) {
+          parent.querySelectorAll('.option-card').forEach(c => c.classList.remove('selected'));
+          this.classList.add('selected');
+        } else {
+          this.classList.toggle('selected');
+        }
+      }
+    });
+  }
+});
+
+function selectRadio(card) {
+  card.parentElement.querySelectorAll('.option-card').forEach(c => c.classList.remove('selected'));
+  card.classList.add('selected');
+}
+function toggleCheck(card) { card.classList.toggle('selected'); }
+function selectLikert(dot) {
+  dot.parentElement.querySelectorAll('.likert-dot').forEach(d => d.classList.remove('selected'));
+  dot.classList.add('selected');
+}
+function selectNps(dot) {
+  dot.parentElement.querySelectorAll('.nps-dot').forEach(d => d.classList.remove('selected'));
+  dot.classList.add('selected');
+}
+function addQuestion() {
+  const types = ['TEXTO CURTO','TEXTO LONGO','MÚLTIPLA [○]','[✓✓]','ESCALA','NPS','RANKING','MATRIZ','ARQUIVO','DATA','NÚMERO'];
+  const t = types[Math.floor(Math.random()*types.length)];
+  const card = document.createElement('div');
+  card.className = 'q-card';
+  card.innerHTML = `<div class="q-header">
+    <div class="q-title" contenteditable="true">Nova pergunta</div>
+    <div class="q-badge">${t}</div>
+  </div>
+  <div><input class="input-short" placeholder="ex.: Atendimento · coordenação"></div>`;
+  document.getElementById('questions').appendChild(card);
+  card.scrollIntoView({behavior:'smooth'});
+}
+</script>
+
+</body>
+</html>

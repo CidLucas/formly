@@ -1,0 +1,1442 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Formly · 12 Tipos de Pergunta · Protótipo v2</title>
+<style>
+/* ══════════════════════════════════════════
+   CSS TOKENS — exportáveis
+   ══════════════════════════════════════════ */
+:root{
+  /* Cores */
+  --wine:      #7A2E3F;
+  --wine-soft: rgba(122,46,63,.08);
+  --pine:      #3B5B52;
+  --pine-soft: rgba(59,91,82,.1);
+  --paper:     #E7E6E0;
+  --paper-2:   #F3F2EE;
+  --card:      #FCFBF8;
+  --ink:       #191917;
+  --muted:     #6E6D66;
+  --line:      #C9C7BE;
+
+  /* Tipografia */
+  --display: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --body:    Georgia, "Times New Roman", Times, serif;
+  --mono:    ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  /* Espaçamento */
+  --radius:   4px;
+  --radius-sm:2px;
+  --shadow:   0 1px 3px rgba(0,0,0,.05);
+
+  /* Escala */
+  --text-xs: .66rem; --text-sm: .78rem; --text-base: 1rem;
+  --text-lg: 1.15rem; --text-xl: 1.5rem;
+}
+
+/* ══════════════════════════════════════════
+   RESET & BASE
+   ══════════════════════════════════════════ */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{
+  background:var(--paper);color:var(--ink);
+  font-family:var(--body);font-size:16px;line-height:1.55;
+  -webkit-font-smoothing:antialiased;
+}
+
+/* ══════════════════════════════════════════
+   LAYOUT
+   ══════════════════════════════════════════ */
+.wrap{max-width:42rem;margin:0 auto;padding:2rem 1.25rem 5rem}
+
+/* header */
+.eyebrow{
+  font-family:var(--mono);font-size:.66rem;letter-spacing:.18em;
+  text-transform:uppercase;color:var(--muted);
+}
+h1{
+  font-family:var(--display);font-weight:700;letter-spacing:-.02em;
+  font-size:clamp(1.5rem,4vw,2rem);margin:.35rem 0 .15rem;
+}
+.sub{color:var(--muted);font-size:.92rem;margin:0 0 2rem}
+
+/* seção de tipo */
+.type-section{margin-bottom:3rem}
+.type-header{
+  display:flex;align-items:baseline;gap:.7rem;margin-bottom:1rem;
+  padding-bottom:.5rem;border-bottom:1px solid var(--line);
+}
+.type-id{
+  font-family:var(--mono);font-size:.7rem;letter-spacing:.08em;
+  color:var(--wine);font-weight:600;
+}
+.type-name{
+  font-family:var(--display);font-size:1.1rem;font-weight:700;
+}
+.type-usage{
+  font-family:var(--body);font-size:.8rem;color:var(--muted);
+  margin-left:auto;font-style:italic;
+}
+
+/* ══════════════════════════════════════════
+   QUESTION CARD TEMPLATE
+   ══════════════════════════════════════════ */
+.q{
+  background:var(--card);border:1px solid var(--line);
+  border-radius:var(--radius);padding:1.3rem 1.3rem 1.1rem;
+  margin-bottom:1rem;position:relative;
+  transition:border-color .15s ease;
+  box-shadow:var(--shadow);
+}
+.q.focused{border-color:var(--wine)}
+.q.error{border-color:var(--wine)}
+.q.answered::before{
+  content:"";position:absolute;top:10px;left:12px;
+  width:7px;height:7px;border-radius:50%;background:var(--pine);
+}
+
+/* badge do tipo */
+.q-kind{
+  position:absolute;top:12px;right:14px;
+  font-family:var(--mono);font-size:.58rem;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--muted);
+  border:1px solid var(--line);border-radius:var(--radius-sm);
+  padding:.15rem .5rem;
+}
+
+/* label da pergunta */
+.q-label{
+  font-family:var(--display);font-size:1.05rem;font-weight:600;
+  line-height:1.35;padding-right:70px;margin-bottom:.2rem;
+}
+.q-required .q-label::after{
+  content:" *";color:var(--wine);font-family:var(--mono);
+}
+
+/* hint */
+.q-hint{
+  font-family:var(--body);font-size:.85rem;color:var(--muted);
+  font-style:italic;margin-bottom:.9rem;
+}
+
+/* mensagem de erro */
+.q-err{
+  font-family:var(--body);font-size:.82rem;color:var(--wine);
+  margin-top:.5rem;display:none;
+}
+.q.error .q-err{display:block}
+
+/* contador */
+.q-counter{
+  font-family:var(--mono);font-size:.62rem;color:var(--muted);
+  text-align:right;margin-top:.35rem;
+}
+.q-counter.over{color:var(--wine)}
+
+/* ══════════════════════════════════════════
+   LABELS DE ESTADO (demo)
+   ══════════════════════════════════════════ */
+.state-tags{
+  display:flex;gap:.4rem;margin-bottom:.5rem;flex-wrap:wrap;
+}
+.state-tag{
+  font-family:var(--mono);font-size:.58rem;letter-spacing:.06em;
+  text-transform:uppercase;padding:.15rem .5rem;border-radius:999px;
+}
+.state-tag.def{background:var(--paper-2);color:var(--muted);border:1px solid var(--line)}
+.state-tag.hov{background:var(--wine-soft);color:var(--wine);border:1px solid var(--wine)}
+.state-tag.sel{background:var(--wine-soft);color:var(--wine);border:1px solid var(--wine)}
+.state-tag.foc{background:var(--pine-soft);color:var(--pine);border:1px solid var(--pine)}
+.state-tag.err{background:var(--wine-soft);color:var(--wine);border:1px solid var(--wine)}
+.state-tag.ok{background:var(--pine-soft);color:var(--pine);border:1px solid var(--pine)}
+
+/* ══════════════════════════════════════════
+   T01 · TEXTO CURTO
+   ══════════════════════════════════════════ */
+.input-short{
+  width:100%;padding:.7rem .8rem;
+  font-family:var(--body);font-size:1rem;color:var(--ink);
+  background:var(--paper-2);border:1px solid var(--line);
+  border-radius:var(--radius-sm);outline:none;
+  transition:border-color .15s ease;
+}
+.input-short::placeholder{color:var(--muted);font-style:italic}
+.input-short:focus{border-color:var(--wine);box-shadow:0 0 0 2px var(--wine-soft)}
+
+/* ══════════════════════════════════════════
+   T02 · TEXTO LONGO + ÁUDIO
+   ══════════════════════════════════════════ */
+.textarea-long{
+  width:100%;min-height:100px;padding:.7rem .8rem;
+  font-family:var(--body);font-size:1rem;color:var(--ink);
+  background:var(--paper-2);border:1px solid var(--line);
+  border-radius:var(--radius-sm);outline:none;resize:vertical;
+  line-height:1.55;transition:border-color .15s ease;
+}
+.textarea-long::placeholder{color:var(--muted);font-style:italic}
+.textarea-long:focus{border-color:var(--wine);box-shadow:0 0 0 2px var(--wine-soft)}
+
+/* divisória áudio */
+.audio-divider{
+  display:flex;align-items:center;gap:10px;
+  margin:14px 0;color:var(--muted);
+  font-family:var(--body);font-size:.82rem;
+}
+.audio-divider::before,.audio-divider::after{
+  content:"";flex:1;height:1px;background:var(--line);
+}
+
+/* botão gravar */
+.rec-btn{
+  display:inline-flex;align-items:center;gap:.55rem;
+  font-family:var(--mono);font-size:.78rem;letter-spacing:.05em;
+  background:var(--wine);color:#fff;border:0;
+  border-radius:var(--radius-sm);padding:.6rem 1rem;cursor:pointer;
+  transition:background .15s ease;
+}
+.rec-btn:hover{background:#651f2f}
+.rec-btn .rec-dot{width:.55rem;height:.55rem;border-radius:50%;background:#fff}
+.rec-btn.recording{background:#651f2f}
+.rec-btn.recording .rec-dot{animation:pulse-dot 1s infinite}
+@keyframes pulse-dot{50%{opacity:.25}}
+
+.rec-timer{
+  font-family:var(--mono);font-size:.82rem;color:var(--wine);
+  min-width:3rem;display:inline-block;margin-left:.5rem;
+}
+.audio-hint{
+  font-family:var(--mono);font-size:.6rem;letter-spacing:.06em;
+  text-transform:uppercase;color:var(--muted);
+}
+
+/* waveform */
+.audio-waveform{
+  display:flex;align-items:center;gap:10px;
+  padding:10px 14px;background:var(--paper-2);
+  border:1px solid var(--line);border-radius:var(--radius-sm);
+  margin-top:6px;
+}
+.audio-waveform .play-btn{
+  font-family:var(--mono);font-size:.75rem;
+  color:var(--pine);background:none;border:0;cursor:pointer;
+}
+.audio-waveform .bars{
+  flex:1;display:flex;align-items:flex-end;gap:2px;height:26px;
+}
+.audio-waveform .bars span{
+  flex:1;background:var(--pine);border-radius:1px;opacity:.45;
+}
+.audio-waveform .wave-time{
+  font-family:var(--mono);font-size:.66rem;color:var(--muted);
+}
+.audio-rerecord{
+  font-family:var(--body);font-size:.78rem;color:var(--muted);
+  margin-top:5px;cursor:pointer;display:inline-block;
+  text-decoration:underline;
+}
+.audio-rerecord:hover{color:var(--wine)}
+
+/* ══════════════════════════════════════════
+   T03 · MÚLTIPLA ESCOLHA (ÚNICA) — Radio cards
+   ══════════════════════════════════════════ */
+.choices{display:flex;flex-direction:column;gap:.45rem}
+.choice{
+  display:flex;align-items:center;gap:.7rem;cursor:pointer;
+  padding:.65rem .8rem;background:var(--paper-2);
+  border:1px solid var(--line);border-radius:var(--radius-sm);
+  font-size:.95rem;transition:all .15s ease;position:relative;
+}
+.choice:hover{border-color:var(--wine)}
+.choice.selected{border-color:var(--wine);background:var(--wine-soft)}
+.choice input{position:absolute;opacity:0;pointer-events:none}
+
+/* radio */
+.choice .radio-ind{
+  width:1.05rem;height:1.05rem;border-radius:50%;
+  border:1.5px solid var(--muted);flex-shrink:0;position:relative;
+  transition:all .15s ease;
+}
+.choice.selected .radio-ind{border-color:var(--wine)}
+.choice.selected .radio-ind::after{
+  content:"";position:absolute;inset:3px;border-radius:50%;
+  background:var(--wine);
+}
+
+/* ══════════════════════════════════════════
+   T04 · MÚLTIPLA ESCOLHA (MÚLTIPLA) — Checkbox
+   ══════════════════════════════════════════ */
+.choice .check-ind{
+  width:1.05rem;height:1.05rem;border-radius:2px;
+  border:2px solid var(--muted);flex-shrink:0;position:relative;
+  transition:all .15s ease;
+}
+.choice.selected .check-ind{
+  border-color:var(--wine);background:var(--wine);
+}
+.choice.selected .check-ind::after{
+  content:"";position:absolute;left:4px;top:1px;
+  width:4px;height:8px;border:solid #fff;border-width:0 2px 2px 0;
+  transform:rotate(45deg);
+}
+
+/* ══════════════════════════════════════════
+   T05 · ESCALA LIKERT
+   ══════════════════════════════════════════ */
+.likert{display:flex;flex-direction:column;align-items:center;gap:4px}
+.likert-row{
+  display:flex;align-items:center;gap:0;position:relative;
+}
+.likert-line{
+  position:absolute;top:50%;left:12px;right:12px;height:1px;
+  background:var(--line);z-index:0;
+}
+.likert-pt{
+  width:1.8rem;height:1.8rem;border-radius:50%;position:relative;z-index:1;
+  cursor:pointer;display:grid;place-items:center;margin:0 1rem;
+  transition:all .15s ease;
+  border:1.5px solid var(--muted);background:var(--card);
+}
+.likert-pt:hover{border-color:var(--wine);transform:scale(1.15)}
+.likert-pt.selected{border-color:var(--wine);background:var(--wine)}
+.likert-pt.selected::after{
+  content:"";width:.5rem;height:.5rem;border-radius:50%;
+  background:#fff;
+}
+.likert-labels{
+  display:flex;justify-content:space-between;width:100%;
+  max-width:340px;margin-top:2px;
+}
+.likert-labels span{
+  font-family:var(--mono);font-size:.72rem;color:var(--muted);
+  max-width:90px;
+}
+.likert-labels span:last-child{text-align:right}
+.likert-neutral{
+  font-family:var(--mono);font-size:.62rem;color:var(--muted);
+  font-style:italic;margin-top:2px;
+}
+.likert-na{
+  margin-top:10px;font-family:var(--body);font-size:.82rem;
+  display:flex;align-items:center;gap:.5rem;color:var(--muted);
+  cursor:pointer;
+}
+
+/* ══════════════════════════════════════════
+   T06 · NPS
+   ══════════════════════════════════════════ */
+.nps-row{
+  display:flex;gap:2px;justify-content:center;flex-wrap:wrap;
+  margin:.6rem 0;
+}
+.nps-pt{
+  width:2.1rem;height:2.1rem;border-radius:50%;
+  border:1.5px solid var(--muted);background:var(--card);
+  cursor:pointer;display:grid;place-items:center;
+  font-family:var(--mono);font-size:.7rem;color:var(--muted);
+  transition:all .12s ease;
+}
+.nps-pt:hover{border-color:var(--wine)}
+.nps-pt.selected{border-color:var(--wine);background:var(--wine);color:#fff}
+.nps-labels{
+  display:flex;justify-content:space-between;
+  font-family:var(--mono);font-size:.62rem;color:var(--muted);
+  max-width:440px;margin:0 auto;
+}
+.nps-zone-detractor{background:var(--wine-soft)!important}
+.nps-zone-neutral{background:var(--paper-2)!important}
+.nps-zone-promoter{background:var(--pine-soft)!important}
+
+/* ══════════════════════════════════════════
+   T07 · RANKING (drag and drop)
+   ══════════════════════════════════════════ */
+.rank-item{
+  display:flex;align-items:center;gap:.6rem;
+  background:var(--card);border:1px solid var(--line);
+  border-radius:var(--radius-sm);padding:.55rem .65rem;
+  margin-bottom:.45rem;cursor:grab;transition:all .15s ease;
+  position:relative;
+}
+.rank-item:hover{border-color:var(--wine)}
+.rank-item.dragging{opacity:.5;box-shadow:0 4px 16px rgba(0,0,0,.12);border-color:var(--wine)}
+.rank-grip{font-family:var(--mono);font-size:.7rem;color:var(--muted);cursor:grab}
+.rank-num{
+  font-family:var(--mono);font-size:.62rem;color:var(--wine);
+  width:1.4rem;height:1.4rem;border:1px solid var(--wine);
+  border-radius:50%;display:grid;place-items:center;flex-shrink:0;
+}
+.rank-label{flex:1;font-size:.95rem}
+.rank-drop-zone{
+  height:3px;background:var(--wine);margin:.2rem 0;border-radius:1px;
+  opacity:0;transition:opacity .15s ease;
+}
+.rank-drop-zone.active{opacity:1}
+
+/* ══════════════════════════════════════════
+   T08 · MATRIZ DE ESCALA
+   ══════════════════════════════════════════ */
+.matrix-wrap{overflow-x:auto}
+.matrix{
+  width:100%;border-collapse:collapse;
+  font-size:.9rem;
+}
+.matrix th{
+  font-family:var(--mono);font-size:.66rem;letter-spacing:.04em;
+  color:var(--muted);text-align:center;padding:.4rem .6rem;
+  font-weight:400;border-bottom:1px solid var(--line);
+}
+.matrix td{
+  padding:.55rem .6rem;text-align:center;
+  border-bottom:1px solid var(--line);
+  transition:background .12s ease;
+}
+.matrix tr:hover td{background:var(--paper-2)}
+.matrix td:first-child{
+  text-align:left;font-size:.92rem;font-family:var(--body);
+}
+.matrix .mat-radio{
+  width:1rem;height:1rem;border-radius:50%;border:1.5px solid var(--muted);
+  display:inline-block;cursor:pointer;transition:all .12s ease;
+  vertical-align:middle;
+}
+.matrix .mat-radio:hover{border-color:var(--wine)}
+.matrix .mat-radio.selected{border-color:var(--wine);background:var(--wine);box-shadow:inset 0 0 0 3px var(--card)}
+
+/* mobile matrix cards */
+.matrix-cards{display:none}
+@media(max-width:500px){
+  .matrix-wrap{display:none}
+  .matrix-cards{display:flex;flex-direction:column;gap:.6rem}
+  .mat-card{
+    background:var(--card);border:1px solid var(--line);
+    border-radius:var(--radius-sm);padding:.8rem .9rem;
+  }
+  .mat-card-label{font-size:.92rem;margin-bottom:.5rem}
+  .mat-card-opts{display:flex;justify-content:space-between;align-items:center}
+}
+
+/* ══════════════════════════════════════════
+   T09 · UPLOAD DE ARQUIVO
+   ══════════════════════════════════════════ */
+.dropzone{
+  border:1.5px dashed var(--line);border-radius:var(--radius-sm);
+  padding:2rem 1rem;text-align:center;cursor:pointer;
+  transition:all .15s ease;background:var(--paper-2);
+}
+.dropzone:hover,.dropzone.drag{border-color:var(--wine);background:var(--wine-soft)}
+.dropzone .dz-icon{font-size:1.5rem;display:block;margin-bottom:.4rem}
+.dropzone .dz-text{
+  font-family:var(--mono);font-size:.66rem;letter-spacing:.04em;
+  color:var(--muted);
+}
+.file-item{
+  display:flex;align-items:center;gap:.5rem;
+  background:var(--paper-2);border:1px solid var(--line);
+  border-radius:var(--radius-sm);padding:.45rem .55rem;margin-top:.45rem;
+  font-size:.85rem;
+}
+.file-ext{
+  font-family:var(--mono);font-size:.6rem;
+  background:var(--paper);border:1px solid var(--line);
+  border-radius:var(--radius-sm);padding:.1rem .35rem;
+}
+.file-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.file-size{
+  font-family:var(--mono);font-size:.62rem;color:var(--muted);
+}
+.file-del{
+  background:none;border:0;color:var(--muted);cursor:pointer;
+  font-size:1rem;padding:0 .2rem;
+}
+.file-del:hover{color:var(--wine)}
+.file-progress{
+  height:3px;background:var(--line);border-radius:1px;margin-top:3px;
+}
+.file-progress>i{display:block;height:100%;background:var(--wine);border-radius:1px}
+
+/* ══════════════════════════════════════════
+   T10 · DATA E HORA
+   ══════════════════════════════════════════ */
+.datetime-row{display:flex;gap:.7rem;align-items:flex-start}
+.datetime-row input{
+  flex:1;min-width:0;padding:.65rem .75rem;
+  font-family:var(--mono);font-size:.92rem;color:var(--ink);
+  background:var(--paper-2);border:1px solid var(--line);
+  border-radius:var(--radius-sm);outline:none;
+}
+.datetime-row input::placeholder{color:var(--muted);font-family:var(--mono)}
+.datetime-row input:focus{border-color:var(--wine);box-shadow:0 0 0 2px var(--wine-soft)}
+.time-toggle{
+  font-family:var(--body);font-size:.78rem;color:var(--muted);
+  cursor:pointer;display:flex;align-items:center;gap:.4rem;
+  margin-top:.5rem;
+}
+
+/* ══════════════════════════════════════════
+   T11 · NÚMERO
+   ══════════════════════════════════════════ */
+.input-num{
+  width:8rem;padding:.65rem .75rem;
+  font-family:var(--mono);font-size:1.05rem;color:var(--ink);
+  background:var(--paper-2);border:1px solid var(--line);
+  border-radius:var(--radius-sm);outline:none;text-align:center;
+  transition:border-color .15s ease;
+}
+.input-num::placeholder{color:var(--muted);font-family:var(--mono);font-size:.85rem}
+.input-num:focus{border-color:var(--wine);box-shadow:0 0 0 2px var(--wine-soft)}
+.input-num.out-of-range{border-color:var(--wine)}
+.num-meta{
+  font-family:var(--mono);font-size:.62rem;color:var(--muted);
+  margin-top:.35rem;
+}
+
+/* ══════════════════════════════════════════
+   T12 · LISTA DINÂMICA (add / reorder / remove)
+   ══════════════════════════════════════════ */
+.dyn-list{list-style:none;padding:0;margin:0}
+.dyn-item{
+  display:flex;align-items:center;gap:.6rem;
+  background:var(--card);border:1px solid var(--line);
+  border-radius:var(--radius-sm);padding:.5rem .6rem;
+  margin-bottom:.45rem;transition:all .15s ease;
+}
+.dyn-item:hover{border-color:var(--wine)}
+.dyn-item.dragging{opacity:.5;box-shadow:0 4px 16px rgba(0,0,0,.12);border-color:var(--wine)}
+.dyn-grip{
+  font-family:var(--mono);font-size:.7rem;color:var(--muted);
+  cursor:grab;padding:0 .1rem;
+}
+.dyn-num{
+  font-family:var(--mono);font-size:.62rem;color:var(--wine);
+  width:1.4rem;height:1.4rem;border:1px solid var(--wine);
+  border-radius:50%;display:grid;place-items:center;flex-shrink:0;
+}
+.dyn-item input{
+  flex:1;border:0;background:none;font-family:var(--body);
+  font-size:.95rem;color:var(--ink);padding:.2rem 0;outline:none;
+}
+.dyn-item input::placeholder{color:var(--muted);font-style:italic}
+.dyn-del{
+  background:none;border:0;color:var(--muted);cursor:pointer;
+  font-size:1.1rem;line-height:1;padding:.2rem .4rem;transition:color .12s ease;
+}
+.dyn-del:hover{color:var(--wine)}
+.dyn-add{
+  font-family:var(--mono);font-size:.72rem;letter-spacing:.04em;
+  background:none;border:1px dashed var(--line);border-radius:var(--radius-sm);
+  color:var(--wine);cursor:pointer;padding:.55rem 1rem;width:100%;margin-top:.3rem;
+  transition:all .15s ease;
+}
+.dyn-add:hover{border-color:var(--wine);background:var(--wine-soft)}
+.dyn-suggestions{
+  background:var(--pine-soft);border-radius:var(--radius-sm);
+  padding:.8rem 1rem;margin-top:.8rem;
+}
+.dyn-sug-label{
+  font-family:var(--mono);font-size:.6rem;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--pine);margin-bottom:.45rem;display:block;
+}
+.dyn-sug-chips{display:flex;flex-wrap:wrap;gap:.4rem}
+.dyn-chip{
+  font-family:var(--mono);font-size:.68rem;
+  background:var(--card);border:1px solid var(--line);
+  border-radius:var(--radius-sm);padding:.3rem .5rem;cursor:pointer;
+  transition:all .12s ease;
+}
+.dyn-chip:hover{border-color:var(--pine);color:var(--pine)}
+.dyn-chip::before{content:"+ "}
+.dyn-drop-zone{
+  height:3px;background:var(--wine);margin:.2rem 0;border-radius:1px;
+  opacity:0;transition:opacity .15s ease;
+}
+.dyn-drop-zone.active{opacity:1}
+
+/* ══════════════════════════════════════════
+   NAVEGAÇÃO — Modo Etapas
+   ══════════════════════════════════════════ */
+.nav-stage{
+  border-top:1px solid var(--line);padding-top:1.2rem;margin-top:2rem;
+}
+.progress-bar{
+  height:3px;background:var(--line);border-radius:2px;
+  margin-bottom:.6rem;overflow:hidden;
+}
+.progress-bar>i{display:block;height:100%;background:var(--wine);transition:width .4s ease;width:33%}
+.progress-info{
+  display:flex;justify-content:space-between;
+  font-family:var(--mono);font-size:.62rem;letter-spacing:.08em;
+  text-transform:uppercase;color:var(--muted);
+}
+.progress-info span.on{color:var(--wine)}
+.nav-buttons{
+  display:flex;gap:.7rem;margin-top:1.2rem;align-items:center;
+}
+
+/* ══════════════════════════════════════════
+   NAVEGAÇÃO — Modo Scroll
+   ══════════════════════════════════════════ */
+.submit-sticky{
+  position:sticky;bottom:0;background:var(--card);
+  border-top:1px solid var(--line);padding:.85rem 1rem;
+  margin-top:1.5rem;text-align:center;
+}
+.submit-sticky .btn{width:100%}
+
+/* ══════════════════════════════════════════
+   BOTÕES
+   ══════════════════════════════════════════ */
+.btn{
+  font-family:var(--mono);font-size:.78rem;letter-spacing:.05em;
+  padding:.65rem 1.2rem;border-radius:var(--radius-sm);cursor:pointer;
+  border:1px solid var(--wine);background:var(--wine);color:#fff;
+  transition:all .15s ease;text-decoration:none;display:inline-block;
+}
+.btn:hover{background:#651f2f}
+.btn.ghost{background:none;color:var(--wine)}
+.btn.ghost:hover{background:var(--wine-soft)}
+.btn:disabled{opacity:.35;cursor:not-allowed}
+
+/* ══════════════════════════════════════════
+   MOBILE: 375px
+   ══════════════════════════════════════════ */
+@media(max-width:420px){
+  .wrap{padding:1.5rem .75rem 4rem}
+  .q{padding:1rem .9rem .9rem}
+  .q-label{padding-right:60px;font-size:.95rem}
+  .q-kind{font-size:.55rem}
+  .datetime-row{flex-direction:column}
+  .input-num{width:100%}
+  .nps-pt{width:1.7rem;height:1.7rem;font-size:.6rem}
+  .nps-row{gap:1px}
+  .likert-pt{width:1.5rem;height:1.5rem;margin:0 .6rem}
+}
+
+/* ══════════════════════════════════════════
+   DEMO LABELS
+   ══════════════════════════════════════════ */
+.section-divider{
+  font-family:var(--mono);font-size:.64rem;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--pine);
+  margin:1.8rem 0 .8rem;padding-bottom:.4rem;
+  border-bottom:1px solid var(--pine);
+  opacity:.7;
+}
+
+/* ══════════════════════════════════════════
+   TELA DE ABERTURA E CONCLUSÃO
+   ══════════════════════════════════════════ */
+.screen-intro,.screen-done{
+  background:var(--card);border:1px solid var(--line);
+  border-radius:var(--radius);padding:2.5rem 1.5rem;
+  text-align:center;box-shadow:var(--shadow);
+}
+.screen-intro h2,.screen-done h2{
+  font-family:var(--display);font-weight:700;font-size:1.6rem;
+  letter-spacing:-.02em;margin-bottom:.5rem;
+}
+.screen-intro p,.screen-done p{
+  color:var(--muted);margin-bottom:1.2rem;font-size:.95rem;
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<!-- ════════════════════════════════════════
+     HEADER
+     ════════════════════════════════════════ -->
+<span class="eyebrow">Formly · Fase 0 — Protótipo</span>
+<h1>11 tipos de pergunta</h1>
+<p class="sub">DNA wine/pine/paper · Helvetica Neue + Georgia + SF Mono · todos os estados por tipo</p>
+
+<!-- ════════════════════════════════════════
+     TELA DE ABERTURA
+     ════════════════════════════════════════ -->
+<div class="section-divider">Tela de abertura</div>
+<div class="screen-intro">
+  <h2>diagnóstico de uso de IA</h2>
+  <p>Sobre como o seu trabalho acontece hoje. Não há resposta certa — o que interessa é o real, não o ideal.</p>
+  <p style="font-size:.82rem;color:var(--muted);">~ 8 minutos · 12 perguntas · suas respostas não são atribuídas</p>
+  <button class="btn">Começar</button>
+</div>
+
+<!-- ════════════════════════════════════════
+     T01 · TEXTO CURTO
+     ════════════════════════════════════════ -->
+<div class="type-section">
+  <div class="type-header">
+    <span class="type-id">T01</span>
+    <span class="type-name">Texto curto</span>
+    <span class="type-usage">nome, função, e-mail</span>
+  </div>
+
+  <!-- default -->
+  <div class="state-tags"><span class="state-tag def">default</span></div>
+  <div class="q">
+    <span class="q-kind">TEXTO</span>
+    <div class="q-label">Sua área e função</div>
+    <div class="q-hint">Só para organizar, não para identificar</div>
+    <input class="input-short" type="text" placeholder="ex.: Atendimento · coordenação">
+  </div>
+
+  <!-- focado + respondido -->
+  <div class="state-tags"><span class="state-tag foc">focado</span><span class="state-tag ok">respondido</span></div>
+  <div class="q focused answered">
+    <span class="q-kind">TEXTO</span>
+    <div class="q-label">Sua área e função</div>
+    <div class="q-hint">Só para organizar, não para identificar</div>
+    <input class="input-short" type="text" value="Atendimento · coordenação" style="border-color:var(--wine)">
+  </div>
+
+  <!-- erro + obrigatório -->
+  <div class="state-tags"><span class="state-tag err">erro</span><span class="state-tag err">obrigatório</span></div>
+  <div class="q error q-required">
+    <span class="q-kind">TEXTO</span>
+    <div class="q-label">Nome completo</div>
+    <div class="q-hint">Precisamos saber quem está respondendo</div>
+    <input class="input-short" type="text" value="" style="border-color:var(--wine)">
+    <div class="q-err">Este campo é obrigatório.</div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════
+     T02 · TEXTO LONGO + ÁUDIO
+     ════════════════════════════════════════ -->
+<div class="type-section">
+  <div class="type-header">
+    <span class="type-id">T02</span>
+    <span class="type-name">Texto longo + áudio</span>
+    <span class="type-usage">relatos, explicações</span>
+  </div>
+
+  <!-- vazio -->
+  <div class="state-tags"><span class="state-tag def">vazio</span></div>
+  <div class="q">
+    <span class="q-kind">TEXTO</span>
+    <div class="q-label">Qual foi a parte mais irritante?</div>
+    <div class="q-hint">Uma ou duas frases.</div>
+    <textarea class="textarea-long" placeholder="Pode escrever, gravar um áudio, ou os dois."></textarea>
+    <div class="q-counter">0/400</div>
+    <div class="audio-divider">ou</div>
+    <button class="rec-btn"><span class="rec-dot"></span> Gravar áudio</button>
+    <span class="audio-hint" style="margin-left:.7rem;">0:00</span>
+  </div>
+
+  <!-- digitando -->
+  <div class="state-tags"><span class="state-tag foc">digitando</span></div>
+  <div class="q focused">
+    <span class="q-kind">TEXTO</span>
+    <div class="q-label">Qual foi a parte mais irritante?</div>
+    <div class="q-hint">Uma ou duas frases.</div>
+    <textarea class="textarea-long">O fornecedor atrasou a entrega três vezes e ninguém me avisou. Tive que descobrir sozinho quando o cliente ligou cobrando.</textarea>
+    <div class="q-counter">127/400</div>
+    <div class="audio-divider">ou</div>
+    <button class="rec-btn"><span class="rec-dot"></span> Gravar áudio</button>
+    <span class="audio-hint" style="margin-left:.7rem;">0:00</span>
+  </div>
+
+  <!-- gravando -->
+  <div class="state-tags"><span class="state-tag sel">gravando</span></div>
+  <div class="q">
+    <span class="q-kind">TEXTO</span>
+    <div class="q-label">Qual foi a parte mais irritante?</div>
+    <div class="q-hint">Uma ou duas frases.</div>
+    <textarea class="textarea-long" placeholder="Pode escrever, gravar um áudio, ou os dois."></textarea>
+    <div class="q-counter">0/400</div>
+    <div style="display:flex;align-items:center;gap:.7rem;margin-top:12px">
+      <button class="rec-btn recording"><span class="rec-dot"></span> Parar</button>
+      <span class="rec-timer">0:14</span>
+    </div>
+  </div>
+
+  <!-- ambos: texto + áudio gravado -->
+  <div class="state-tags"><span class="state-tag ok">texto + áudio</span></div>
+  <div class="q answered">
+    <span class="q-kind">TEXTO</span>
+    <div class="q-label">Qual foi a parte mais irritante?</div>
+    <div class="q-hint">Uma ou duas frases.</div>
+    <textarea class="textarea-long">O fornecedor atrasou a entrega três vezes e ninguém me avisou.</textarea>
+    <div class="q-counter">67/400</div>
+    <div class="audio-waveform">
+      <button class="play-btn">▶</button>
+      <div class="bars">
+        <span style="height:40%"></span><span style="height:65%"></span><span style="height:85%"></span>
+        <span style="height:55%"></span><span style="height:90%"></span><span style="height:70%"></span>
+        <span style="height:45%"></span><span style="height:80%"></span><span style="height:60%"></span>
+        <span style="height:95%"></span><span style="height:50%"></span><span style="height:75%"></span>
+        <span style="height:35%"></span><span style="height:85%"></span><span style="height:65%"></span>
+        <span style="height:40%"></span><span style="height:70%"></span><span style="height:55%"></span>
+        <span style="height:90%"></span><span style="height:45%"></span><span style="height:60%"></span>
+      </div>
+      <span class="wave-time">0:32</span>
+    </div>
+    <span class="audio-rerecord">⟳ regravar</span>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════
+     T03 · MÚLTIPLA ESCOLHA (ÚNICA)
+     ════════════════════════════════════════ -->
+<div class="type-section">
+  <div class="type-header">
+    <span class="type-id">T03</span>
+    <span class="type-name">Múltipla escolha (única)</span>
+    <span class="type-usage">radio cards</span>
+  </div>
+
+  <!-- default + hover simulado na 2ª opção -->
+  <div class="state-tags"><span class="state-tag def">default</span><span class="state-tag hov">2ª opção hover</span></div>
+  <div class="q">
+    <span class="q-kind">MÚLTIPLA [○]</span>
+    <div class="q-label">Seu trabalho é mais...</div>
+    <div class="choices">
+      <label class="choice"><input type="radio" name="t3a"><span class="radio-ind"></span>Repetitivo e previsível</label>
+      <label class="choice" style="border-color:var(--wine)"><input type="radio" name="t3a"><span class="radio-ind"></span>Um equilíbrio entre os dois</label>
+      <label class="choice"><input type="radio" name="t3a"><span class="radio-ind"></span>Sempre diferente, muito julgamento</label>
+    </div>
+  </div>
+
+  <!-- selecionado -->
+  <div class="state-tags"><span class="state-tag sel">2ª selecionada</span><span class="state-tag ok">respondido</span></div>
+  <div class="q answered">
+    <span class="q-kind">MÚLTIPLA [○]</span>
+    <div class="q-label">Qual o maior gargalo hoje?</div>
+    <div class="q-hint">Escolha uma opção</div>
+    <div class="choices">
+      <label class="choice"><input type="radio" name="t3b"><span class="radio-ind"></span>Comunicação entre turnos</label>
+      <label class="choice selected"><input type="radio" name="t3b" checked><span class="radio-ind"></span>Falta de padronização</label>
+      <label class="choice"><input type="radio" name="t3b"><span class="radio-ind"></span>Demora na tomada de decisão</label>
+      <label class="choice"><input type="radio" name="t3b"><span class="radio-ind"></span>Equipe sobrecarregada</label>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════
+     T04 · MÚLTIPLA ESCOLHA (MÚLTIPLA)
+     ════════════════════════════════════════ -->
+<div class="type-section">
+  <div class="type-header">
+    <span class="type-id">T04</span>
+    <span class="type-name">Múltipla escolha (múltipla)</span>
+    <span class="type-usage">checkbox cards</span>
+  </div>
+
+  <div class="state-tags"><span class="state-tag sel">2 selecionadas</span></div>
+  <div class="q answered">
+    <span class="q-kind">MÚLTIPLA [✓✓]</span>
+    <div class="q-label">Onde a informação costuma estar?</div>
+    <div class="q-hint">Pode marcar mais de uma.</div>
+    <div class="choices">
+      <label class="choice selected"><input type="checkbox" checked><span class="check-ind"></span>Numa pasta / drive</label>
+      <label class="choice selected"><input type="checkbox" checked><span class="check-ind"></span>No Notion ou similar</label>
+      <label class="choice"><input type="checkbox"><span class="check-ind"></span>Na cabeça de uma pessoa</label>
+      <label class="choice"><input type="checkbox"><span class="check-ind"></span>Cada hora é de um jeito</label>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════
+     T05 · ESCALA LIKERT
+     ════════════════════════════════════════ -->
+<div class="type-section">
+  <div class="type-header">
+    <span class="type-id">T05</span>
+    <span class="type-name">Escala Likert</span>
+    <span class="type-usage">5 ou 7 pontos</span>
+  </div>
+
+  <div class="state-tags"><span class="state-tag sel">3ª selecionada</span></div>
+  <div class="q answered">
+    <span class="q-kind">ESCALA</span>
+    <div class="q-label">A ferramenta facilitou meu trabalho</div>
+    <div class="likert">
+      <div class="likert-row" style="position:relative">
+        <div class="likert-line"></div>
+        <span class="likert-pt"></span>
+        <span class="likert-pt"></span>
+        <span class="likert-pt selected"></span>
+        <span class="likert-pt"></span>
+        <span class="likert-pt"></span>
+      </div>
+      <div class="likert-labels">
+        <span>Discordo totalmente</span>
+        <span>Concordo totalmente</span>
+      </div>
+      <div class="likert-neutral">neutro</div>
+      <label class="likert-na">
+        <input type="radio" name="t5na"><span class="radio-ind" style="width:.9rem;height:.9rem;border-radius:50%;border:1.5px solid var(--muted);display:inline-block"></span> Não sei / Não se aplica
+      </label>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════
+     T06 · NPS
+     ════════════════════════════════════════ -->
+<div class="type-section">
+  <div class="type-header">
+    <span class="type-id">T06</span>
+    <span class="type-name">NPS</span>
+    <span class="type-usage">0 a 10</span>
+  </div>
+
+  <div class="state-tags"><span class="state-tag sel">9 selecionado</span><span class="state-tag ok">com zonas</span></div>
+  <div class="q answered">
+    <span class="q-kind">NPS</span>
+    <div class="q-label">Quanto você recomendaria?</div>
+    <div class="nps-row">
+      <span class="nps-pt nps-zone-detractor">0</span>
+      <span class="nps-pt nps-zone-detractor">1</span>
+      <span class="nps-pt nps-zone-detractor">2</span>
+      <span class="nps-pt nps-zone-detractor">3</span>
+      <span class="nps-pt nps-zone-detractor">4</span>
+      <span class="nps-pt nps-zone-detractor">5</span>
+      <span class="nps-pt nps-zone-detractor">6</span>
+      <span class="nps-pt nps-zone-neutral">7</span>
+      <span class="nps-pt nps-zone-neutral">8</span>
+      <span class="nps-pt nps-zone-promoter selected">9</span>
+      <span class="nps-pt nps-zone-promoter">10</span>
+    </div>
+    <div class="nps-labels">
+      <span>Não recomendaria</span>
+      <span>Com certeza recomendaria</span>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════
+     T07 · RANKING (drag and drop)
+     ════════════════════════════════════════ -->
+<div class="type-section">
+  <div class="type-header">
+    <span class="type-id">T07</span>
+    <span class="type-name">Ranking</span>
+    <span class="type-usage">drag and drop</span>
+  </div>
+
+  <div class="state-tags"><span class="state-tag def">default</span><span class="state-tag hov">2ª arrastando</span></div>
+  <div class="q">
+    <span class="q-kind">RANKING</span>
+    <div class="q-label">Ordene por prioridade</div>
+    <div class="q-hint">Arraste para reordenar.</div>
+    <div id="rankList">
+      <div class="rank-item" draggable="true">
+        <span class="rank-grip">⠿</span><span class="rank-num">1</span>
+        <span class="rank-label">Redução de custo</span>
+      </div>
+      <div class="rank-item dragging" draggable="true">
+        <span class="rank-grip">⠿</span><span class="rank-num">2</span>
+        <span class="rank-label">Velocidade de entrega</span>
+      </div>
+      <div class="rank-drop-zone active"></div>
+      <div class="rank-item" draggable="true">
+        <span class="rank-grip">⠿</span><span class="rank-num">3</span>
+        <span class="rank-label">Qualidade do output</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════
+     T08 · MATRIZ DE ESCALA
+     ════════════════════════════════════════ -->
+<div class="type-section">
+  <div class="type-header">
+    <span class="type-id">T08</span>
+    <span class="type-name">Matriz de escala</span>
+    <span class="type-usage">linhas × colunas</span>
+  </div>
+
+  <div class="state-tags"><span class="state-tag sel">preenchida</span></div>
+  <div class="q answered">
+    <span class="q-kind">MATRIZ</span>
+    <div class="q-label">Avalie os atributos</div>
+    <div class="matrix-wrap">
+      <table class="matrix">
+        <thead><tr><th></th><th>Ruim</th><th>Reg.</th><th>Bom</th><th>Ótimo</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>Atendimento</td>
+            <td><span class="mat-radio"></span></td>
+            <td><span class="mat-radio"></span></td>
+            <td><span class="mat-radio selected"></span></td>
+            <td><span class="mat-radio"></span></td>
+          </tr>
+          <tr>
+            <td>Tempo de resposta</td>
+            <td><span class="mat-radio"></span></td>
+            <td><span class="mat-radio selected"></span></td>
+            <td><span class="mat-radio"></span></td>
+            <td><span class="mat-radio"></span></td>
+          </tr>
+          <tr>
+            <td>Clareza do escopo</td>
+            <td><span class="mat-radio"></span></td>
+            <td><span class="mat-radio"></span></td>
+            <td><span class="mat-radio"></span></td>
+            <td><span class="mat-radio selected"></span></td>
+          </tr>
+          <tr>
+            <td>Preço</td>
+            <td><span class="mat-radio selected"></span></td>
+            <td><span class="mat-radio"></span></td>
+            <td><span class="mat-radio"></span></td>
+            <td><span class="mat-radio"></span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <!-- versão mobile -->
+    <div class="matrix-cards">
+      <div class="mat-card">
+        <div class="mat-card-label">Atendimento</div>
+        <div class="mat-card-opts">
+          <span style="font-size:.7rem;color:var(--muted)">Ruim</span>
+          <span class="mat-radio" style="margin:0 .15rem"></span>
+          <span class="mat-radio" style="margin:0 .15rem"></span>
+          <span class="mat-radio selected" style="margin:0 .15rem"></span>
+          <span class="mat-radio" style="margin:0 .15rem"></span>
+          <span style="font-size:.7rem;color:var(--muted)">Ótimo</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════
+     T09 · UPLOAD DE ARQUIVO
+     ════════════════════════════════════════ -->
+<div class="type-section">
+  <div class="type-header">
+    <span class="type-id">T09</span>
+    <span class="type-name">Upload de arquivo</span>
+    <span class="type-usage">documentos, imagens</span>
+  </div>
+
+  <div class="state-tags"><span class="state-tag ok">2 arquivos</span></div>
+  <div class="q answered">
+    <span class="q-kind">ARQUIVO</span>
+    <div class="q-label">Anexe os documentos</div>
+    <div class="q-hint">PDF, DOCX ou imagem. Máx 10MB.</div>
+    <div class="dropzone">
+      <span class="dz-icon">☁</span>
+      <span class="dz-text">arraste aqui ou toque para selecionar</span>
+    </div>
+    <div class="file-item">
+      <span class="file-ext">PDF</span>
+      <span class="file-name">relatorio-Q2.pdf</span>
+      <span class="file-size">80 KB</span>
+      <button class="file-del">×</button>
+    </div>
+    <div class="file-item">
+      <span class="file-ext">XLSX</span>
+      <span class="file-name">planilha-dados.xlsx</span>
+      <span class="file-size">120 KB</span>
+      <button class="file-del">×</button>
+    </div>
+    <!-- uploading state -->
+    <div class="file-item" style="flex-wrap:wrap">
+      <span class="file-ext">PNG</span>
+      <span class="file-name">captura-tela.png</span>
+      <span class="file-size">enviando…</span>
+      <div class="file-progress" style="width:100%"><i style="width:60%"></i></div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════
+     T10 · DATA E HORA
+     ════════════════════════════════════════ -->
+<div class="type-section">
+  <div class="type-header">
+    <span class="type-id">T10</span>
+    <span class="type-name">Data e hora</span>
+    <span class="type-usage">agendamento</span>
+  </div>
+
+  <div class="state-tags"><span class="state-tag def">default</span></div>
+  <div class="q">
+    <span class="q-kind">DATA</span>
+    <div class="q-label">Quando ocorreu?</div>
+    <div class="datetime-row">
+      <input type="text" placeholder="dd/mm/aaaa" value="15/08/2026">
+      <input type="text" placeholder="hh:mm" value="14:30" style="max-width:8rem">
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════
+     T11 · NÚMERO
+     ════════════════════════════════════════ -->
+<div class="type-section">
+  <div class="type-header">
+    <span class="type-id">T11</span>
+    <span class="type-name">Número</span>
+    <span class="type-usage">quantidades</span>
+  </div>
+
+  <div class="state-tags"><span class="state-tag ok">dentro do range</span></div>
+  <div class="q answered">
+    <span class="q-kind">NÚMERO</span>
+    <div class="q-label">Quantas pessoas na equipe?</div>
+    <input class="input-num" type="number" value="12" min="1" max="500">
+    <div class="num-meta">mín. 1 · máx. 500</div>
+  </div>
+
+  <!-- fora do range -->
+  <div class="state-tags"><span class="state-tag err">fora do range</span></div>
+  <div class="q error">
+    <span class="q-kind">NÚMERO</span>
+    <div class="q-label">Quantas unidades?</div>
+    <input class="input-num out-of-range" type="number" value="0" min="1" max="500">
+    <div class="num-meta">mín. 1 · máx. 500</div>
+    <div class="q-err">O valor precisa ser entre 1 e 500.</div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════
+     T12 · LISTA DINÂMICA
+     ════════════════════════════════════════ -->
+<div class="type-section">
+  <div class="type-header">
+    <span class="type-id">T12</span>
+    <span class="type-name">Lista dinâmica</span>
+    <span class="type-usage">adicionar / reordenar / remover</span>
+  </div>
+
+  <!-- vazio -->
+  <div class="state-tags"><span class="state-tag def">vazio</span></div>
+  <div class="q">
+    <span class="q-kind">LISTA</span>
+    <div class="q-label">Quais são as etapas do processo?</div>
+    <div class="q-hint">Liste as etapas, do começo ao fim. Arraste para reordenar.</div>
+    <ul class="dyn-list" id="dynList"></ul>
+    <button class="dyn-add" id="dynAdd">+ adicionar etapa</button>
+    <div class="dyn-suggestions">
+      <span class="dyn-sug-label">Sugestões — toque para adicionar</span>
+      <div class="dyn-sug-chips" id="dynSugChips">
+        <button class="dyn-chip">Briefing</button>
+        <button class="dyn-chip">Elaboração de proposta</button>
+        <button class="dyn-chip">Orçamento</button>
+        <button class="dyn-chip">Aprovação interna</button>
+        <button class="dyn-chip">Produção</button>
+        <button class="dyn-chip">Revisão de qualidade</button>
+        <button class="dyn-chip">Entrega ao cliente</button>
+        <button class="dyn-chip">Faturamento</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- preenchido -->
+  <div class="state-tags"><span class="state-tag ok">4 etapas</span><span class="state-tag hov">2ª arrastando</span></div>
+  <div class="q answered">
+    <span class="q-kind">LISTA</span>
+    <div class="q-label">Quais são as etapas do processo?</div>
+    <div class="q-hint">Liste as etapas, do começo ao fim. Arraste para reordenar.</div>
+    <ul class="dyn-list">
+      <li class="dyn-item" draggable="true">
+        <span class="dyn-grip">⠿</span><span class="dyn-num">1</span>
+        <input type="text" value="Briefing">
+        <button class="dyn-del">×</button>
+      </li>
+      <li class="dyn-item dragging" draggable="true">
+        <span class="dyn-grip">⠿</span><span class="dyn-num">2</span>
+        <input type="text" value="Elaboração de proposta">
+        <button class="dyn-del">×</button>
+      </li>
+      <li class="dyn-item" draggable="true">
+        <span class="dyn-grip">⠿</span><span class="dyn-num">3</span>
+        <input type="text" value="Orçamento">
+        <button class="dyn-del">×</button>
+      </li>
+      <li class="dyn-item" draggable="true">
+        <span class="dyn-grip">⠿</span><span class="dyn-num">4</span>
+        <input type="text" value="Aprovação interna">
+        <button class="dyn-del">×</button>
+      </li>
+    </ul>
+    <button class="dyn-add">+ adicionar etapa</button>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════
+     NAVEGAÇÃO — Modo Etapas
+     ════════════════════════════════════════ -->
+<div class="section-divider">Navegação · Modo Etapas</div>
+<div class="nav-stage">
+  <div class="progress-bar"><i style="width:33%"></i></div>
+  <div class="progress-info">
+    <span class="on">● etapa 1</span><span>○ etapa 2</span><span>○ etapa 3</span>
+  </div>
+  <div style="font-family:var(--mono);font-size:.64rem;letter-spacing:.06em;color:var(--muted);margin-top:.3rem;">Etapa 1 de 3</div>
+  <div class="nav-buttons">
+    <button class="btn ghost" disabled>← Voltar</button>
+    <span class="spacer" style="flex:1"></span>
+    <button class="btn">Avançar →</button>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════
+     NAVEGAÇÃO — Modo Scroll
+     ════════════════════════════════════════ -->
+<div class="section-divider">Navegação · Modo Scroll</div>
+<div class="q" style="border:1px dashed var(--line);text-align:center;padding:2rem 1rem;">
+  <span style="color:var(--muted);font-size:.85rem;">(todas as perguntas visíveis acima)</span>
+</div>
+<div class="submit-sticky">
+  <button class="btn">Enviar respostas</button>
+</div>
+
+<!-- ════════════════════════════════════════
+     TELA DE CONCLUSÃO
+     ════════════════════════════════════════ -->
+<div class="section-divider">Tela de conclusão</div>
+<div class="screen-done">
+  <span class="eyebrow">Concluído</span>
+  <h2>obrigado</h2>
+  <p>Suas respostas foram enviadas. Pode fechar esta janela.</p>
+  <span style="font-family:var(--mono);font-size:.62rem;color:var(--muted);">Nada é compartilhado com atribuição.</span>
+</div>
+
+</div><!-- /wrap -->
+
+<script>
+// ── T03 radio cards: toggle selection ──
+document.querySelectorAll('.choices').forEach(grp => {
+  const inputs = grp.querySelectorAll('input[type=radio]');
+  const isRadio = inputs.length > 0;
+  if (!isRadio) return;
+
+  grp.querySelectorAll('.choice').forEach(choice => {
+    choice.addEventListener('click', function(e) {
+      const radio = this.querySelector('input[type=radio]');
+      if (!radio) return;
+      // unselect siblings
+      grp.querySelectorAll('.choice').forEach(c => c.classList.remove('selected'));
+      radio.checked = true;
+      this.classList.add('selected');
+    });
+  });
+});
+
+// ── T04 checkbox cards: toggle ──
+document.querySelectorAll('.choices').forEach(grp => {
+  const checkboxes = grp.querySelectorAll('input[type=checkbox]');
+  if (checkboxes.length === 0) return;
+  grp.querySelectorAll('.choice').forEach(choice => {
+    choice.addEventListener('click', function(e) {
+      const cb = this.querySelector('input[type=checkbox]');
+      if (!cb) return;
+      cb.checked = !cb.checked;
+      this.classList.toggle('selected', cb.checked);
+    });
+  });
+});
+
+// ── T05 likert: select point ──
+document.querySelectorAll('.likert').forEach(likert => {
+  likert.querySelectorAll('.likert-pt').forEach(pt => {
+    pt.addEventListener('click', function() {
+      const row = this.closest('.likert-row');
+      row.querySelectorAll('.likert-pt').forEach(p => p.classList.remove('selected'));
+      this.classList.add('selected');
+    });
+  });
+});
+
+// ── T06 NPS: select ──
+document.querySelectorAll('.nps-row').forEach(row => {
+  row.querySelectorAll('.nps-pt').forEach(pt => {
+    pt.addEventListener('click', function() {
+      row.querySelectorAll('.nps-pt').forEach(p => p.classList.remove('selected'));
+      this.classList.add('selected');
+    });
+  });
+});
+
+// ── T07 ranking: drag reorder ──
+(function(){
+  const list = document.getElementById('rankList');
+  let dragEl = null;
+
+  list.querySelectorAll('.rank-item').forEach(item => {
+    item.addEventListener('dragstart', function(e) {
+      dragEl = this;
+      this.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+    });
+    item.addEventListener('dragend', function() {
+      this.classList.remove('dragging');
+      dragEl = null;
+      list.querySelectorAll('.rank-drop-zone').forEach(z => z.classList.remove('active'));
+    });
+    item.addEventListener('dragover', function(e) { e.preventDefault(); });
+    item.addEventListener('drop', function(e) {
+      e.preventDefault();
+      if (!dragEl || dragEl === this) return;
+      const all = [...list.querySelectorAll('.rank-item')];
+      const fromIdx = all.indexOf(dragEl);
+      const toIdx = all.indexOf(this);
+      if (fromIdx < toIdx) {
+        this.parentNode.insertBefore(dragEl, this.nextSibling);
+      } else {
+        this.parentNode.insertBefore(dragEl, this);
+      }
+    });
+  });
+
+  // drop zones
+  list.querySelectorAll('.rank-drop-zone').forEach(zone => {
+    zone.addEventListener('dragover', function(e) {
+      e.preventDefault();
+      this.classList.add('active');
+    });
+    zone.addEventListener('dragleave', function() { this.classList.remove('active'); });
+    zone.addEventListener('drop', function(e) {
+      e.preventDefault();
+      this.classList.remove('active');
+      if (!dragEl) return;
+      this.parentNode.insertBefore(dragEl, this);
+    });
+  });
+})();
+
+// ── T08 matrix: select ──
+document.querySelectorAll('.matrix tbody tr').forEach(row => {
+  row.querySelectorAll('.mat-radio').forEach(radio => {
+    radio.addEventListener('click', function() {
+      row.querySelectorAll('.mat-radio').forEach(r => r.classList.remove('selected'));
+      this.classList.add('selected');
+    });
+  });
+});
+
+// ── T09 dropzone: visual feedback ──
+document.querySelectorAll('.dropzone').forEach(dz => {
+  dz.addEventListener('dragover', function(e) { e.preventDefault(); this.classList.add('drag'); });
+  dz.addEventListener('dragleave', function() { this.classList.remove('drag'); });
+  dz.addEventListener('drop', function(e) { e.preventDefault(); this.classList.remove('drag'); });
+  dz.addEventListener('click', function() {
+    // simula seleção de arquivo
+    const dummy = ['relatorio-final.pdf', 'dados-atualizados.xlsx', 'briefing.docx'];
+    const name = dummy[Math.floor(Math.random() * dummy.length)];
+    const ext = name.split('.').pop().toUpperCase();
+    const size = Math.floor(Math.random() * 500) + ' KB';
+    const existing = this.parentElement.querySelector('.file-item:last-of-type');
+    const item = document.createElement('div');
+    item.className = 'file-item';
+    item.innerHTML = '<span class="file-ext">'+ext+'</span><span class="file-name">'+name+'</span><span class="file-size">'+size+'</span><button class="file-del">×</button>';
+    item.querySelector('.file-del').addEventListener('click', function() { item.remove(); });
+    if (existing && existing.nextSibling) {
+      this.parentElement.insertBefore(item, existing.nextSibling);
+    } else {
+      this.parentElement.appendChild(item);
+    }
+  });
+});
+
+// ── T09 file del buttons ──
+document.querySelectorAll('.file-del').forEach(btn => {
+  btn.addEventListener('click', function() { this.closest('.file-item').remove(); });
+});
+
+// ── T11 input num: validate ──
+document.querySelectorAll('.input-num').forEach(inp => {
+  inp.addEventListener('input', function() {
+    const v = parseInt(this.value);
+    const min = parseInt(this.getAttribute('min')) || 0;
+    const max = parseInt(this.getAttribute('max')) || Infinity;
+    this.classList.toggle('out-of-range', this.value !== '' && (v < min || v > max));
+  });
+});
+
+// ── T10 date input mask ──
+document.querySelectorAll('.datetime-row input[placeholder="dd/mm/aaaa"]').forEach(inp => {
+  inp.addEventListener('input', function() {
+    let v = this.value.replace(/\D/g, '');
+    if (v.length > 8) v = v.slice(0,8);
+    if (v.length >= 4) v = v.slice(0,2) + '/' + v.slice(2,4) + '/' + v.slice(4);
+    else if (v.length >= 2) v = v.slice(0,2) + '/' + v.slice(2);
+    this.value = v;
+  });
+});
+
+// ── T12 dynamic list: add / reorder / delete ──
+(function(){
+  const dynList = document.getElementById('dynList');
+  const dynAdd = document.getElementById('dynAdd');
+  const sugChips = document.getElementById('dynSugChips');
+  let seq = 0;
+
+  function addItem(name) {
+    const li = document.createElement('li');
+    li.className = 'dyn-item';
+    li.draggable = true;
+    const num = dynList.children.length + 1;
+    li.innerHTML = '<span class="dyn-grip">⠿</span><span class="dyn-num">'+num+'</span>'
+      +'<input type="text" value="'+escapeHtml(name||'')+'" placeholder="Nome da etapa">'
+      +'<button class="dyn-del">×</button>';
+
+    // delete
+    li.querySelector('.dyn-del').addEventListener('click', function(e) {
+      e.stopPropagation();
+      li.remove();
+      renumber();
+    });
+
+    // drag
+    li.addEventListener('dragstart', function(e) {
+      li.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+    });
+    li.addEventListener('dragend', function() {
+      li.classList.remove('dragging');
+      document.querySelectorAll('.dyn-drop-zone').forEach(z => z.remove());
+    });
+    li.addEventListener('dragover', function(e) { e.preventDefault(); });
+    li.addEventListener('drop', function(e) {
+      e.preventDefault();
+      const dragging = dynList.querySelector('.dragging');
+      if (!dragging || dragging === li) return;
+      // insert before this item
+      dynList.insertBefore(dragging, li);
+      renumber();
+      document.querySelectorAll('.dyn-drop-zone').forEach(z => z.remove());
+    });
+
+    dynList.appendChild(li);
+
+    if (!name) li.querySelector('input').focus();
+
+    return li;
+  }
+
+  function renumber() {
+    dynList.querySelectorAll('.dyn-item').forEach((item, i) => {
+      item.querySelector('.dyn-num').textContent = i + 1;
+    });
+  }
+
+  dynAdd.addEventListener('click', function() { addItem(''); });
+
+  // suggestion chips
+  sugChips.querySelectorAll('.dyn-chip').forEach(chip => {
+    chip.addEventListener('click', function() {
+      addItem(this.textContent);
+    });
+  });
+
+  // seed initial items
+  addItem('Briefing');
+  addItem('Elaboração de proposta');
+  addItem('Orçamento');
+
+  function escapeHtml(s) {
+    return (s||'').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  }
+})();
+</script>
+</body>
+</html>

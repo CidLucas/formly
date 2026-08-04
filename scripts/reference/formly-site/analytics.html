@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Formly · Analytics</title>
+<style>
+:root {
+  --wine: #7A2E3F; --wine-soft: #F5E8EB; --wine-dark: #5C1E2C;
+  --pine: #3B5B52;
+  --paper: #E7E6E0; --paper2: #F3F2EE; --card: #FCFBF8;
+  --muted: #6E6D66; --line: #C9C7BE;
+  --display: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --body: Georgia, 'Times New Roman', Times, serif;
+  --mono: 'SF Mono', 'Fira Code', monospace;
+  --s: 8px; --m: 16px; --l: 24px; --xl: 40px;
+  --r: 6px; --rl: 12px;
+  --ease: cubic-bezier(.4,0,.2,1);
+  --fast: 150ms; --norm: 250ms;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 16px; -webkit-font-smoothing: antialiased; }
+body {
+  font-family: var(--body);
+  color: #1a1a1a;
+  background: var(--paper);
+  min-height: 100vh;
+}
+.app { max-width: 560px; margin: 0 auto; padding: var(--xl) var(--l); }
+
+.back {
+  font-family: var(--display); font-size: 0.85rem; color: var(--muted);
+  cursor: pointer; background: none; border: none; padding: 0; margin-bottom: var(--l);
+  display: inline-block;
+}
+.back:hover { color: var(--wine); }
+
+.header {
+  display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--l);
+}
+.header-title { font-family: var(--display); font-size: 1.1rem; font-weight: 600; }
+
+.export-btn {
+  display: inline-flex; align-items: center; gap: var(--s);
+  padding: var(--s) var(--m); font-family: var(--display); font-size: 0.78rem;
+  font-weight: 500; color: var(--wine); background: var(--card);
+  border: 1.5px solid var(--line); border-radius: var(--r); cursor: pointer;
+  transition: all var(--fast);
+}
+.export-btn:hover { border-color: var(--wine); background: var(--wine-soft); }
+
+.kpi-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--m);
+  margin-bottom: var(--xl);
+}
+.kpi-card {
+  background: var(--card); border: 1.5px solid var(--line);
+  border-radius: var(--rl); padding: var(--l); text-align: center;
+}
+.kpi-value {
+  font-family: var(--display); font-size: 2rem; font-weight: 700;
+  color: var(--wine); line-height: 1;
+}
+.kpi-label {
+  font-family: var(--mono); font-size: 0.66rem; color: var(--muted);
+  text-transform: uppercase; letter-spacing: 0.06em; margin-top: var(--s);
+}
+.kpi-sub { font-family: var(--body); font-size: 0.78rem; color: var(--muted); margin-top: 2px; }
+
+.section-title {
+  font-family: var(--display); font-size: 0.85rem; font-weight: 600; margin-bottom: var(--s);
+}
+
+.bar-list { display: flex; flex-direction: column; gap: var(--s); }
+.bar-row { display: flex; align-items: center; gap: var(--m); }
+.bar-label {
+  width: 120px; font-family: var(--body); font-size: 0.82rem;
+  color: #1a1a1a; text-align: right; flex-shrink: 0;
+}
+.bar-track { flex: 1; height: 24px; background: var(--paper2); border-radius: 3px; overflow: hidden; }
+.bar-fill { height: 100%; border-radius: 3px; background: var(--wine); transition: width 600ms var(--ease); }
+.bar-val { width: 36px; font-family: var(--mono); font-size: 0.72rem; color: var(--muted); text-align: left; flex-shrink: 0; }
+
+@media (max-width: 600px) {
+  .app { padding: var(--l) var(--m); }
+  .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+  .kpi-value { font-size: 1.5rem; }
+  .bar-label { width: 80px; font-size: 0.72rem; }
+}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <button class="back" onclick="go('send.html')">← Voltar</button>
+
+  <div class="header">
+    <div class="header-title">Pesquisa de Clima 2026</div>
+    <button class="export-btn" onclick="alert('Exportando CSV...')">Exportar CSV</button>
+  </div>
+
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <div class="kpi-value">12</div>
+      <div class="kpi-label">Respostas</div>
+      <div class="kpi-sub">de 15 enviados</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-value">80%</div>
+      <div class="kpi-label">Taxa de resposta</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-value">4min</div>
+      <div class="kpi-label">Tempo médio</div>
+      <div class="kpi-sub">por resposta</div>
+    </div>
+  </div>
+
+  <div>
+    <div class="section-title">Respostas por pergunta</div>
+    <div class="bar-list">
+      <div class="bar-row">
+        <span class="bar-label">Satisfação geral</span>
+        <div class="bar-track"><div class="bar-fill" style="width:0" data-w="88%"></div></div>
+        <span class="bar-val">88%</span>
+      </div>
+      <div class="bar-row">
+        <span class="bar-label">Comunicação</span>
+        <div class="bar-track"><div class="bar-fill" style="width:0" data-w="72%"></div></div>
+        <span class="bar-val">72%</span>
+      </div>
+      <div class="bar-row">
+        <span class="bar-label">Ferramentas</span>
+        <div class="bar-track"><div class="bar-fill" style="width:0" data-w="65%"></div></div>
+        <span class="bar-val">65%</span>
+      </div>
+      <div class="bar-row">
+        <span class="bar-label">Carga de trabalho</span>
+        <div class="bar-track"><div class="bar-fill" style="width:0" data-w="52%"></div></div>
+        <span class="bar-val">52%</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function go(url) { window.location.href = url; }
+// Animate bars on load
+window.addEventListener('load', function() {
+  setTimeout(function() {
+    document.querySelectorAll('.bar-fill').forEach(function(b) {
+      b.style.width = b.getAttribute('data-w');
+    });
+  }, 100);
+});
+</script>
+
+</body>
+</html>

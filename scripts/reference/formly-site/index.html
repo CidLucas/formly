@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Formly</title>
+<style>
+:root {
+  --wine: #7A2E3F;
+  --wine-soft: #F5E8EB;
+  --wine-dark: #5C1E2C;
+  --pine: #3B5B52;
+  --paper: #E7E6E0;
+  --card: #FCFBF8;
+  --muted: #6E6D66;
+  --line: #C9C7BE;
+  --display: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --body: Georgia, 'Times New Roman', Times, serif;
+  --mono: 'SF Mono', 'Fira Code', monospace;
+  --r: 6px;
+  --rl: 12px;
+  --ease: cubic-bezier(.4,0,.2,1);
+  --fast: 150ms;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 16px; -webkit-font-smoothing: antialiased; height: 100%; }
+body {
+  font-family: var(--body);
+  color: #1a1a1a;
+  background: var(--paper);
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.landing {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 32px;
+  text-align: center;
+  padding: 40px 24px;
+  width: 100%;
+  max-width: 480px;
+}
+
+.logo {
+  font-family: var(--display);
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--wine);
+  letter-spacing: -0.03em;
+}
+
+.question {
+  font-family: var(--display);
+  font-size: 1.4rem;
+  font-weight: 500;
+  color: #1a1a1a;
+  letter-spacing: -0.01em;
+}
+
+.input-wrap {
+  width: 100%;
+}
+
+.input-main {
+  width: 100%;
+  padding: 20px 24px;
+  font-family: var(--body);
+  font-size: 1.05rem;
+  color: #1a1a1a;
+  background: var(--card);
+  border: 1.5px solid var(--line);
+  border-radius: var(--rl);
+  outline: none;
+  transition: border var(--fast) var(--ease), box-shadow var(--fast) var(--ease);
+}
+.input-main:focus {
+  border-color: var(--wine);
+  box-shadow: 0 0 0 3px var(--wine-soft);
+}
+.input-main::placeholder {
+  color: var(--muted);
+  font-style: italic;
+}
+
+.or-divider {
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.btn-audio {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 36px;
+  font-family: var(--display);
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--wine);
+  background: var(--card);
+  border: 1.5px solid var(--wine);
+  border-radius: 999px;
+  cursor: pointer;
+  transition: all var(--fast) var(--ease);
+}
+.btn-audio:hover { background: var(--wine-soft); }
+.btn-audio.recording {
+  background: var(--wine);
+  color: #fff;
+  border-color: var(--wine);
+  animation: pulse-rec 1.5s infinite;
+}
+@keyframes pulse-rec {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(122,46,63,.3); }
+  50%      { box-shadow: 0 0 0 14px rgba(122,46,63,0); }
+}
+.audio-dot {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  background: var(--wine);
+}
+.btn-audio.recording .audio-dot {
+  background: #fff;
+  animation: blink-rec .6s infinite;
+}
+@keyframes blink-rec {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: .2; }
+}
+</style>
+</head>
+<body>
+
+<div class="landing">
+  <div class="logo">formly</div>
+
+  <div class="question">Precisa de um questionário?</div>
+
+  <div class="input-wrap">
+    <input
+      type="text"
+      class="input-main"
+      placeholder="Me fala qual, ou grave um áudio..."
+      id="main-input"
+      autofocus
+    >
+  </div>
+
+  <div class="or-divider">ou</div>
+
+  <button class="btn-audio" id="audio-btn" onclick="handleAudio()">
+    <span class="audio-dot"></span>
+    <span>Gravar áudio</span>
+  </button>
+</div>
+
+<script>
+const input = document.getElementById('main-input');
+const audioBtn = document.getElementById('audio-btn');
+let timer = null;
+
+input.addEventListener('keydown', function(e) {
+  if (e.key === 'Enter' && this.value.trim()) {
+    window.location.href = 'auth.html';
+  }
+});
+
+function handleAudio() {
+  if (audioBtn.classList.contains('recording')) {
+    audioBtn.classList.remove('recording');
+    audioBtn.querySelector('span:last-child').textContent = 'Gravar áudio';
+    if (timer) clearTimeout(timer);
+    return;
+  }
+  audioBtn.classList.add('recording');
+  audioBtn.querySelector('span:last-child').textContent = 'Gravando...';
+  timer = setTimeout(function() {
+    audioBtn.classList.remove('recording');
+    audioBtn.querySelector('span:last-child').textContent = 'Gravar áudio';
+    window.location.href = 'auth.html';
+  }, 2000);
+}
+</script>
+
+</body>
+</html>
