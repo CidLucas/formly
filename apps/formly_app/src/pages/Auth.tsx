@@ -3,6 +3,14 @@ import type { FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 const TOKEN_KEY = 'formly_token'
+const EMAIL_KEY = 'formly_email'
+const NAME_KEY = 'formly_name'
+
+// Salva identidade do usuário (nome + e-mail) — usado como remetente no envio.
+function saveIdentity(email: string, name?: string) {
+  if (email) window.localStorage.setItem(EMAIL_KEY, email)
+  if (name) window.localStorage.setItem(NAME_KEY, name)
+}
 
 export default function Auth() {
   const navigate = useNavigate()
@@ -13,6 +21,12 @@ export default function Auth() {
   // fluxo OAuth (signInWithOAuth({ provider: 'google' })) e o login por e-mail
   // (signInWithPassword / magic link). Por enquanto, ambos os botões usam o dev
   // login — gera um JWT local e não existe conta real.
+  //
+  // COM SUPABASE OAuth ATIVO:
+  //   const { data } = await supabase.auth.signInWithOAuth({ provider: 'google' })
+  //   // no callback / onAuthStateChange, o user do Supabase traz:
+  //   const u = session.user
+  //   saveIdentity(u.email ?? '', u.user_metadata?.full_name ?? u.user_metadata?.name)
   const devLogin = async () => {
     setBusy(true)
     try {
@@ -20,6 +34,9 @@ export default function Auth() {
       const data = await res.json()
       if (!res.ok) throw new Error(data.detail || 'Falha ao entrar')
       window.localStorage.setItem(TOKEN_KEY, data.token)
+      // Dev: salva e-mail informado (se houver); nome fica p/ ser preenchido
+      // na landing ou pelo Google quando o Supabase OAuth estiver ativo.
+      if (email.trim()) saveIdentity(email.trim())
       navigate('/builder')
     } catch {
       alert('Não foi possível entrar (backend offline?)')
