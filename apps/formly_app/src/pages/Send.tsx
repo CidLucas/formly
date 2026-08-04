@@ -95,6 +95,7 @@ export default function Send() {
         contact_ids: [],
         emails: [...manualEmails, ...csvEmails],
         message,
+        from_email: window.localStorage.getItem('formly_email') ?? undefined,
       })
       setResult(res)
       window.setTimeout(() => {

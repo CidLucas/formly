@@ -76,7 +76,7 @@ export const surveys = {
   create: (data: SurveyData) => api<SurveyData>('/surveys/', { method: 'POST', body: JSON.stringify(data) }),
   update: (id: string, data: Partial<SurveyData>) => api<SurveyData>(`/surveys/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
   publish: (id: string) => api<{ slug: string; url: string }>(`/surveys/${id}/publish`, { method: 'POST' }),
-  distribute: (id: string, data: { contact_ids: string[]; emails: string[]; message?: string }) =>
+  distribute: (id: string, data: { contact_ids: string[]; emails: string[]; message?: string; from_email?: string }) =>
     api<DistributeResult>(`/surveys/${id}/distribute`, { method: 'POST', body: JSON.stringify(data) }),
   stats: (id: string) => api<any>(`/surveys/${id}/stats`),
   responses: (id: string, params?: string) => api<any>(`/surveys/${id}/responses${params ? `?${params}` : ''}`),
