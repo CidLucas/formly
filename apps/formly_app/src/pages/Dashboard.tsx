@@ -10,9 +10,10 @@ import {
   Download,
   LinkSimple,
   Microphone,
+  Sparkle,
   Warning,
 } from '@phosphor-icons/react'
-import { contacts, surveys } from '../lib/api'
+import { ai, contacts, surveys } from '../lib/api'
 import type { Question } from '../lib/api'
 
 interface Answer {
@@ -65,6 +66,40 @@ interface QuestionStats {
 
 interface AnswerEntry {
   answer: Answer
+}
+
+function Spinner({ size = 14 }: { size?: number }) {
+  return (
+    <span style={{ display: 'inline-block', width: size, height: size, border: '2px solid var(--gb2)', borderTopColor: 'var(--wine)', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+  )
+}
+
+function inlineMd(text: string): ReactNode {
+  const parts = text.split(/\*\*(.+?)\*\*/g)
+  if (parts.length === 1) return text
+  return parts.map((part, i) => (i % 2 === 1 ? <strong key={i}>{part}</strong> : part))
+}
+
+function renderReport(report: string): ReactNode[] {
+  return report.split('\n').map((line, i) => {
+    const trimmed = line.trim()
+    if (!trimmed) return <div key={i} style={{ height: 10 }} />
+    if (trimmed.startsWith('### ')) {
+      return <div key={i} style={{ fontFamily: 'var(--display)', fontWeight: 600, fontSize: 14, color: 'var(--ink)', marginTop: 14, marginBottom: 4 }}>{inlineMd(trimmed.slice(4))}</div>
+    }
+    if (trimmed.startsWith('## ')) {
+      return <div key={i} style={{ fontFamily: 'var(--display)', fontWeight: 600, fontSize: 17, color: 'var(--ink)', marginTop: 20, marginBottom: 6 }}>{inlineMd(trimmed.slice(3))}</div>
+    }
+    if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
+      return (
+        <div key={i} style={{ display: 'flex', gap: 8, marginBottom: 4 }}>
+          <span style={{ color: 'var(--wine)', flexShrink: 0 }}>•</span>
+          <span style={{ whiteSpace: 'pre-wrap' }}>{inlineMd(trimmed.slice(2))}</span>
+        </div>
+      )
+    }
+    return <p key={i} style={{ margin: '0 0 8px', whiteSpace: 'pre-wrap', color: 'var(--ink)', fontSize: 13.5, lineHeight: 1.55 }}>{inlineMd(trimmed)}</p>
+  })
 }
 
 function isAuthError(err: unknown): boolean {
@@ -671,6 +706,9 @@ export default function Dashboard() {
   const [copied, setCopied] = useState(false)
   const [animate, setAnimate] = useState(false)
   const [toast, setToast] = useState<{ message: string; isError: boolean } | null>(null)
+  const [analyzing, setAnalyzing] = useState(false)
+  const [report, setReport] = useState<string | null>(null)
+  const [analyzeError, setAnalyzeError] = useState<string | null>(null)
 
   const { data: survey, isLoading: surveyLoading, isError: surveyError, refetch: refetchSurvey } = useQuery<{
     title: string
@@ -738,6 +776,23 @@ export default function Dashboard() {
       else showToast('Erro ao exportar CSV. Tente novamente.', true)
     } finally {
       setExporting(false)
+    }
+  }
+
+  const handleAnalyze = async () => {
+    if (!id || analyzing) return
+    setAnalyzing(true)
+    setAnalyzeError(null)
+    try {
+      const res = await ai.analyze(id)
+      setReport(res.report)
+      showToast('Análise concluída!')
+    } catch (err) {
+      const msg = err instanceof Error && err.message ? err.message : 'Não foi possível analisar as respostas.'
+      setAnalyzeError(msg)
+      showToast(msg, true)
+    } finally {
+      setAnalyzing(false)
     }
   }
 
@@ -880,10 +935,16 @@ export default function Dashboard() {
           <>
             <div className="header">
               <div className="header-title">{survey?.title ?? '…'}</div>
-              <button className="export-btn" disabled={exporting} onClick={() => void handleExport()}>
-                <Download size={14} />
-                {exporting ? 'Gerando…' : 'Exportar CSV'}
-              </button>
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                <button type="button" className="btn-sm primary" disabled={analyzing} onClick={() => void handleAnalyze()}>
+                  {analyzing ? <Spinner size={12} /> : <Sparkle size={13} />}
+                  {analyzing ? 'Analisando…' : 'Analisar respostas'}
+                </button>
+                <button className="export-btn" disabled={exporting} onClick={() => void handleExport()}>
+                  <Download size={14} />
+                  {exporting ? 'Gerando…' : 'Exportar CSV'}
+                </button>
+              </div>
             </div>
 
             {stats?.low_n_warning ? (
@@ -960,6 +1021,22 @@ export default function Dashboard() {
                 </div>
               ) : null}
             </div>
+
+            {report ? (
+              <div style={{ background: 'var(--card)', border: '1.5px solid var(--line)', borderRadius: 'var(--rl)', padding: 'var(--l)', marginBottom: 'var(--xl)' }}>
+                <div className="section-title" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <Sparkle size={13} color="var(--wine)" />
+                  Relatório de análise
+                </div>
+                {renderReport(report)}
+              </div>
+            ) : null}
+            {analyzeError ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', borderRadius: 'var(--r)', border: '1px solid var(--urg)', background: 'color-mix(in srgb, var(--urg) 8%, var(--card))', color: 'var(--urg)', fontSize: 12.5, marginBottom: 'var(--l)' }}>
+                <Warning size={16} weight="fill" />
+                <span>{analyzeError}</span>
+              </div>
+            ) : null}
 
             <div>
               <div className="section-title">Respostas por pergunta</div>

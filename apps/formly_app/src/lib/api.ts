@@ -51,7 +51,7 @@ function authHeaders(): Record<string, string> {
 
 async function toError(res: Response): Promise<Error> {
   const err = await res.json().catch(() => ({ message: res.statusText }))
-  const error = new Error(err.message || 'API error') as Error & { status?: number }
+  const error = new Error(err.message || err.detail || 'API error') as Error & { status?: number }
   error.status = res.status
   return error
 }
@@ -95,6 +95,7 @@ export const ai = {
   refinementQuestions: (description: string) =>
     api<{ questions: string[] }>('/ai/refinement-questions', { method: 'POST', body: JSON.stringify({ description }) }),
   refine: (survey: any, message: string) => api<{ reply: string }>('/ai/refine', { method: 'POST', body: JSON.stringify({ survey, message }) }),
+  analyze: (surveyId: string) => api<{ report: string }>('/ai/analyze', { method: 'POST', body: JSON.stringify({ survey_id: surveyId }) }),
 }
 
 // Transcrição de áudio (pública, sem auth)
