@@ -74,6 +74,7 @@ def list_responses(
             "status": r.status.value,
             "started_at": r.started_at.isoformat() if r.started_at else None,
             "completed_at": r.completed_at.isoformat() if r.completed_at else None,
+            "time_spent_secs": r.time_spent_secs,
             "answers": [
                 {
                     "question_id": str(a.question_id),

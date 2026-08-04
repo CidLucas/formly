@@ -18,6 +18,12 @@ class QuestionType(str, enum.Enum):
     audio = "audio"
     scale = "scale"
     file_upload = "file_upload"
+    nps = "nps"
+    ranking = "ranking"
+    matrix = "matrix"
+    datetime = "datetime"
+    number = "number"
+    dyn_list = "dyn_list"
 
 class ResponseStatus(str, enum.Enum):
     partial = "partial"

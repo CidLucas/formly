@@ -43,6 +43,7 @@ def submit_response(slug: str, data: dict, db: Session = Depends(get_db)):
         survey_id=survey.id,
         status=ResponseStatus.complete,
         respondent_ref=data.get("respondent_ref"),
+        time_spent_secs=data.get("time_spent_secs"),
     )
     db.add(response)
 

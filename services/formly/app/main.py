@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.api import surveys, public, contacts, responses, ai, transcribe
+from app.api import surveys, public, contacts, responses, ai, transcribe, dev_login
 
 app = FastAPI(title="Formly", version="0.1.0")
 
@@ -22,6 +22,9 @@ app.include_router(surveys.router, prefix="/api/surveys", tags=["surveys"])
 app.include_router(contacts.router, prefix="/api/contacts", tags=["contacts"])
 app.include_router(responses.router, prefix="/api/surveys", tags=["responses"])
 app.include_router(ai.router, prefix="/api/ai", tags=["ai"])
+
+# Modo dev (só sem Supabase)
+app.include_router(dev_login.router, prefix="/api", tags=["dev"])
 
 # Rotas públicas (sem auth)
 app.include_router(public.router, prefix="/api/public", tags=["public"])

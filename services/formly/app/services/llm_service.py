@@ -21,10 +21,10 @@ Seu trabalho é gerar um questionário estruturado baseado na descrição do usu
 
 Regras:
 1. Gere entre 3 e 15 perguntas, conforme solicitado
-2. Use tipos variados: text_short, text_long, multiple_choice, audio, scale, file_upload
+2. Use tipos variados: text_short, text_long, multiple_choice, scale, nps, ranking, matrix, file_upload, datetime, number, dyn_list
 3. Para múltipla escolha, sempre sugira opções relevantes
 4. Para escala, use 1-5 como padrão
-5. Perguntas de áudio são opcionais — só inclua se o usuário pedir ou fizer sentido
+5. Perguntas de áudio são opcionais — só inclua se o usuário pedir ou fizer sentido; nesse caso use text_long com "audio_enabled": true ou o tipo legado audio (depoimentos)
 6. Toda pergunta deve ser clara, objetiva e em português
 
 Responda APENAS com JSON no formato:
@@ -32,7 +32,7 @@ Responda APENAS com JSON no formato:
   "title": "Título do questionário",
   "questions": [
     {
-      "type": "text_short|text_long|multiple_choice|audio|scale|file_upload",
+      "type": "text_short|text_long|multiple_choice|audio|scale|nps|ranking|matrix|file_upload|datetime|number|dyn_list",
       "title": "Texto da pergunta",
       "required": true|false,
       "config": {
@@ -44,11 +44,17 @@ Responda APENAS com JSON no formato:
 
 Config por tipo:
 - text_short: {"max_chars": 500, "placeholder": "..."}
-- text_long: {"max_chars": 5000, "placeholder": "..."}
+- text_long: {"max_chars": 400, "placeholder": "...", "audio_enabled": true} — audio_enabled true quando fizer sentido
 - multiple_choice: {"options": ["Opção A", "Opção B"], "multiple": false}
 - audio: {"max_duration_secs": 60, "follow_up_enabled": false}
-- scale: {"min": 1, "max": 5, "label_min": "Péssimo", "label_max": "Excelente"}
-- file_upload: {"allowed_types": ["pdf", "jpg", "png"], "max_size_mb": 10}
+- scale: {"min": 1, "max": 5, "labels": ["Discordo", "Concordo"], "na_option": true}
+- nps: {"min": 0, "max": 10}
+- ranking: {"options": ["Item A", "Item B", ...]}
+- matrix: {"rows": ["Linha 1", ...], "columns": ["Ruim", "Bom", "Ótimo"]}
+- file_upload: {"allowed_types": ["pdf", "docx", "png"], "max_size_mb": 10}
+- datetime: {"include_time": true}
+- number: {"min": 1, "max": 500}
+- dyn_list: {"suggestions": ["Sugestão 1", ...], "placeholder": "Nome do item"}
 """
 
 REFINEMENT_SYSTEM_PROMPT = """Você é um assistente que ajuda a refinar questionários existentes.
