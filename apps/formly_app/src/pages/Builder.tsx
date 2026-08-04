@@ -131,8 +131,12 @@ export default function Builder() {
     }
   })
   const [toast, setToast] = useState<{ message: string; isError: boolean } | null>(null)
+  const [refineBusy, setRefineBusy] = useState(false)
+  const [refineQuestions, setRefineQuestions] = useState<string[] | null>(null)
+  const [refineAnswers, setRefineAnswers] = useState<string[]>([])
 
   const bodyRef = useRef<HTMLDivElement | null>(null)
+  const intentRef = useRef<string | null>(intent)
   const toastTimerRef = useRef<number | null>(null)
   const autosaveTimerRef = useRef<number | null>(null)
   const lastSavedRef = useRef<{ title: string; questions: string } | null>(null)
@@ -193,6 +197,10 @@ export default function Builder() {
       setLoadFailed(false)
     }
   }, [id])
+
+  useEffect(() => {
+    intentRef.current = intent
+  }, [intent])
 
   useEffect(() => {
     if (loading || !store.id) return
@@ -286,25 +294,92 @@ export default function Builder() {
     }
   }
 
+  const generateSkeleton = async (briefing: string) => {
+    const data = await ai.skeleton(briefing)
+    store.setTitle(data.title ?? intent ?? '')
+    store.setQuestions(normalizeQuestions(data.questions))
+    try {
+      window.sessionStorage.removeItem(INTENT_KEY)
+    } catch {
+      // segue mesmo sem storage
+    }
+    setIntent(null)
+    setRefineQuestions(null)
+    setRefineAnswers([])
+  }
+
   const generateFromIntent = async () => {
-    if (!intent || aiBusy) return
+    if (!intent || aiBusy || refineBusy) return
+    setRefineBusy(true)
+    let questions: string[] = []
+    try {
+      const data = await ai.refinementQuestions(intent)
+      questions = data.questions ?? []
+    } catch {
+      questions = []
+    } finally {
+      setRefineBusy(false)
+    }
+    if (intentRef.current === null) return
+    if (questions.length > 0) {
+      setRefineQuestions(questions)
+      setRefineAnswers(questions.map(() => ''))
+      return
+    }
+    // sem perguntas de refino (ou falha ao buscá-las) → geração direta como antes
     setAiBusy(true)
     try {
-      const data = await ai.skeleton(intent)
-      store.setTitle(data.title ?? intent)
-      store.setQuestions(normalizeQuestions(data.questions))
-      try {
-        window.sessionStorage.removeItem(INTENT_KEY)
-      } catch {
-        // segue mesmo sem storage
-      }
-      setIntent(null)
+      await generateSkeleton(intent)
       showToast('Esqueleto gerado pela IA!')
     } catch (err) {
       handleApiError(err)
     } finally {
       setAiBusy(false)
     }
+  }
+
+  const submitRefined = async () => {
+    if (!intent || aiBusy || !refineQuestions) return
+    const answered = refineQuestions
+      .map((q, i) => ({ q, a: (refineAnswers[i] ?? '').trim() }))
+      .filter((x) => x.a.length > 0)
+    const briefing =
+      answered.length > 0
+        ? `Briefing original: ${intent}\nRespostas adicionais:\n${answered.map((x) => `- ${x.q}: ${x.a}`).join('\n')}`
+        : intent
+    setAiBusy(true)
+    try {
+      await generateSkeleton(briefing)
+      showToast('Esqueleto gerado pela IA!')
+    } catch (err) {
+      handleApiError(err)
+    } finally {
+      setAiBusy(false)
+    }
+  }
+
+  const skipRefine = async () => {
+    if (!intent || aiBusy) return
+    setAiBusy(true)
+    try {
+      await generateSkeleton(intent)
+      showToast('Esqueleto gerado pela IA!')
+    } catch (err) {
+      handleApiError(err)
+    } finally {
+      setAiBusy(false)
+    }
+  }
+
+  const dismissIntent = () => {
+    try {
+      window.sessionStorage.removeItem(INTENT_KEY)
+    } catch {
+      // ignora
+    }
+    setIntent(null)
+    setRefineQuestions(null)
+    setRefineAnswers([])
   }
 
   if (loading) {
@@ -346,26 +421,21 @@ export default function Builder() {
           <div className="intent-banner">
             <Sparkle size={14} weight="fill" style={{ flexShrink: 0 }} />
             <span className="ib-text">{intent}</span>
+            {!refineQuestions && (
+              <button
+                type="button"
+                className="btn-sm"
+                disabled={aiBusy || refineBusy}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 6, flexShrink: 0 }}
+                onClick={() => void generateFromIntent()}
+              >
+                {aiBusy || refineBusy ? <Spinner size={11} /> : <Sparkle size={11} />}
+                {refineBusy ? 'Buscando perguntas…' : 'Gerar com IA'}
+              </button>
+            )}
             <button
               type="button"
-              className="btn-sm"
-              disabled={aiBusy}
-              style={{ display: 'inline-flex', alignItems: 'center', gap: 6, flexShrink: 0 }}
-              onClick={() => void generateFromIntent()}
-            >
-              {aiBusy ? <Spinner size={11} /> : <Sparkle size={11} />}
-              Gerar com IA
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                try {
-                  window.sessionStorage.removeItem(INTENT_KEY)
-                } catch {
-                  // ignora
-                }
-                setIntent(null)
-              }}
+              onClick={dismissIntent}
               style={{
                 background: 'none',
                 border: 'none',
@@ -379,6 +449,72 @@ export default function Builder() {
             >
               <X size={14} />
             </button>
+          </div>
+        )}
+
+        {refineQuestions && intent && (
+          <div
+            style={{
+              background: 'var(--card)',
+              border: '1.5px solid var(--line)',
+              borderRadius: 'var(--rl)',
+              padding: '18px 18px 16px',
+              marginBottom: 'var(--m)',
+              boxShadow: 'var(--shadow-1)',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+              <Sparkle size={14} weight="fill" color="var(--wine)" />
+              <span style={{ fontFamily: 'var(--display)', fontWeight: 600, fontSize: 14, color: 'var(--ink)' }}>
+                Refinar com IA
+              </span>
+            </div>
+            <p style={{ color: 'var(--muted)', fontSize: 13, margin: '0 0 14px' }}>
+              Responda às perguntas abaixo para deixar o formulário mais preciso, ou pule esta etapa.
+            </p>
+            {refineQuestions.map((q, i) => (
+              <div key={i} style={{ marginBottom: 12 }}>
+                <label style={{ display: 'block', fontSize: 13, color: 'var(--ink)', marginBottom: 5, fontWeight: 500 }}>
+                  {i + 1}. {q}
+                </label>
+                <input
+                  type="text"
+                  value={refineAnswers[i] ?? ''}
+                  onChange={(e) => {
+                    const next = [...refineAnswers]
+                    next[i] = e.target.value
+                    setRefineAnswers(next)
+                  }}
+                  placeholder="Sua resposta…"
+                  style={{
+                    width: '100%',
+                    padding: '8px 10px',
+                    fontSize: 13,
+                    fontFamily: 'var(--body)',
+                    color: 'var(--ink)',
+                    background: 'var(--paper-2)',
+                    border: '1.5px solid var(--line)',
+                    borderRadius: 'var(--r)',
+                    outline: 'none',
+                  }}
+                />
+              </div>
+            ))}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6, flexWrap: 'wrap' }}>
+              <button
+                type="button"
+                className="btn-sm primary"
+                disabled={aiBusy}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                onClick={() => void submitRefined()}
+              >
+                {aiBusy ? <Spinner size={11} /> : <Sparkle size={11} />}
+                {aiBusy ? 'Gerando…' : 'Gerar formulário'}
+              </button>
+              <button type="button" className="btn-sm" disabled={aiBusy} onClick={() => void skipRefine()}>
+                Gerar direto
+              </button>
+            </div>
           </div>
         )}
 
