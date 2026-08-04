@@ -9,6 +9,34 @@ from typing import Optional, List
 
 router = APIRouter()
 
+# ── Serialização ──
+
+def serialize_survey(survey):
+    """Serializa survey + perguntas (mesmo formato do endpoint público)."""
+    return {
+        "id": str(survey.id),
+        "user_id": str(survey.user_id),
+        "title": survey.title,
+        "slug": survey.slug,
+        "status": survey.status.value if survey.status else None,
+        "theme": survey.theme,
+        "logo_url": survey.logo_url,
+        "brand_colors": survey.brand_colors,
+        "created_at": survey.created_at.isoformat() if survey.created_at else None,
+        "published_at": survey.published_at.isoformat() if survey.published_at else None,
+        "questions": [
+            {
+                "id": str(q.id),
+                "position": q.position,
+                "type": q.type.value if hasattr(q.type, "value") else q.type,
+                "title": q.title,
+                "required": q.required,
+                "config": q.config,
+            }
+            for q in sorted(survey.questions, key=lambda x: x.position)
+        ],
+    }
+
 # ── Schemas ──
 
 class QuestionSchema(BaseModel):
@@ -31,7 +59,8 @@ class SurveyUpdate(BaseModel):
 @router.get("/")
 def list_surveys(user_id: str = Depends(get_user_id), db: Session = Depends(get_db)):
     """Lista questionários do usuário autenticado."""
-    return db.query(Survey).filter(Survey.user_id == user_id).order_by(Survey.created_at.desc()).all()
+    surveys = db.query(Survey).filter(Survey.user_id == user_id).order_by(Survey.created_at.desc()).all()
+    return [serialize_survey(s) for s in surveys]
 
 @router.post("/")
 def create_survey(data: SurveyCreate, user_id: str = Depends(get_user_id), db: Session = Depends(get_db)):
@@ -57,7 +86,7 @@ def create_survey(data: SurveyCreate, user_id: str = Depends(get_user_id), db: S
 
     db.commit()
     db.refresh(survey)
-    return survey
+    return serialize_survey(survey)
 
 @router.get("/{survey_id}")
 def get_survey(survey_id: str, user_id: str = Depends(get_user_id), db: Session = Depends(get_db)):
@@ -65,7 +94,7 @@ def get_survey(survey_id: str, user_id: str = Depends(get_user_id), db: Session 
     survey = db.query(Survey).filter(Survey.id == survey_id, Survey.user_id == user_id).first()
     if not survey:
         raise HTTPException(status_code=404, detail="Questionário não encontrado")
-    return survey
+    return serialize_survey(survey)
 
 @router.patch("/{survey_id}")
 def update_survey(survey_id: str, data: SurveyUpdate, user_id: str = Depends(get_user_id), db: Session = Depends(get_db)):
@@ -94,7 +123,7 @@ def update_survey(survey_id: str, data: SurveyUpdate, user_id: str = Depends(get
 
     db.commit()
     db.refresh(survey)
-    return survey
+    return serialize_survey(survey)
 
 @router.post("/{survey_id}/publish")
 def publish_survey(survey_id: str, user_id: str = Depends(get_user_id), db: Session = Depends(get_db)):

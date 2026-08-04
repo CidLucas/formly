@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.api import surveys, public, contacts, responses, ai, transcribe, dev_login
+from app.api import surveys, public, contacts, responses, ai, transcribe, dev_login, distribute
 
 app = FastAPI(title="Formly", version="0.1.0")
 
@@ -21,6 +21,7 @@ async def health():
 app.include_router(surveys.router, prefix="/api/surveys", tags=["surveys"])
 app.include_router(contacts.router, prefix="/api/contacts", tags=["contacts"])
 app.include_router(responses.router, prefix="/api/surveys", tags=["responses"])
+app.include_router(distribute.router, prefix="/api/surveys", tags=["distribute"])
 app.include_router(ai.router, prefix="/api/ai", tags=["ai"])
 
 # Modo dev (só sem Supabase)
