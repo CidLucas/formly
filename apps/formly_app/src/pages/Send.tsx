@@ -3,7 +3,7 @@ import type { ChangeEvent } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { Check, Download } from '@phosphor-icons/react'
 import { contacts, surveys } from '../lib/api'
-import type { Contact } from '../lib/api'
+import type { Contact, DistributeResult } from '../lib/api'
 
 const TOKEN_KEY = 'formly_token'
 
@@ -25,6 +25,8 @@ export default function Send() {
   const [csv, setCsv] = useState<CsvFile | null>(null)
   const [message, setMessage] = useState('')
   const [sending, setSending] = useState(false)
+  const [error, setError] = useState('')
+  const [result, setResult] = useState<DistributeResult | null>(null)
 
   const fileRef = useRef<HTMLInputElement | null>(null)
 
@@ -87,12 +89,30 @@ export default function Send() {
     reader.readAsText(file)
   }
 
-  const send = () => {
+  const send = async () => {
     if (sending) return
+    const csvEmails = csv?.emails ?? []
+    if (selected.size === 0 && csvEmails.length === 0) {
+      setError('Selecione ao menos um contato ou importe um CSV')
+      return
+    }
+    setError('')
+    setResult(null)
     setSending(true)
-    window.setTimeout(() => {
-      navigate(`/dashboard/${id ?? ''}`)
-    }, 1500)
+    try {
+      const res = await surveys.distribute(id ?? '', {
+        contact_ids: [...selected],
+        emails: csvEmails,
+        message,
+      })
+      setResult(res)
+      window.setTimeout(() => {
+        navigate(`/dashboard/${id ?? ''}`)
+      }, 1500)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Não foi possível enviar o questionário')
+      setSending(false)
+    }
   }
 
   return (
@@ -236,9 +256,73 @@ export default function Send() {
               />
             </div>
 
-            <button className="btn-send" disabled={sending} onClick={send}>
+            <button className="btn-send" disabled={sending} onClick={() => void send()}>
               {sending ? 'Enviando...' : 'Enviar questionário →'}
             </button>
+
+            {error && (
+              <div
+                style={{
+                  marginTop: 'var(--l)',
+                  padding: '12px 16px',
+                  borderRadius: 'var(--r)',
+                  border: '1px solid #e5b3b3',
+                  background: '#fdf0f0',
+                  color: '#b33434',
+                  fontSize: 13,
+                }}
+              >
+                {error}
+              </div>
+            )}
+
+            {result && result.mode === 'simulated' && result.public_link && (
+              <div
+                style={{
+                  marginTop: 'var(--l)',
+                  padding: '16px',
+                  borderRadius: 'var(--r)',
+                  border: '1px solid var(--pine)',
+                  background: 'var(--pine-soft)',
+                  color: 'var(--pine)',
+                  fontSize: 13,
+                }}
+              >
+                <div style={{ fontWeight: 700, marginBottom: 6 }}>
+                  E-mail simulado (sem provedor configurado).
+                </div>
+                <div style={{ marginBottom: 8 }}>
+                  Compartilhe o link público como alternativa:
+                </div>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                  <code
+                    style={{
+                      flex: 1,
+                      padding: '8px 12px',
+                      background: 'var(--card)',
+                      border: '1px solid var(--line)',
+                      borderRadius: 'var(--r)',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {`${window.location.origin}${result.public_link}`}
+                  </code>
+                  <button
+                    type="button"
+                    className="btn-sm"
+                    onClick={() =>
+                      void navigator.clipboard
+                        .writeText(`${window.location.origin}${result.public_link ?? ''}`)
+                        .catch(() => {})
+                    }
+                  >
+                    Copiar
+                  </button>
+                </div>
+              </div>
+            )}
           </>
         )}
       </div>

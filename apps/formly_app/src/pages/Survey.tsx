@@ -33,7 +33,7 @@ function formatTime(total: number): string {
   return `${mm}:${ss}`
 }
 
-function kindBadge(type: string, config: Record<string, any>): string {
+export function kindBadge(type: string, config: Record<string, any>): string {
   switch (type) {
     case 'text_short':
     case 'text_long':
@@ -63,20 +63,20 @@ function kindBadge(type: string, config: Record<string, any>): string {
   }
 }
 
-function maskDate(raw: string): string {
+export function maskDate(raw: string): string {
   const digits = raw.replace(/\D/g, '').slice(0, 8)
   if (digits.length >= 5) return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`
   if (digits.length >= 3) return `${digits.slice(0, 2)}/${digits.slice(2)}`
   return digits
 }
 
-function maskTime(raw: string): string {
+export function maskTime(raw: string): string {
   const digits = raw.replace(/\D/g, '').slice(0, 4)
   if (digits.length >= 3) return `${digits.slice(0, 2)}:${digits.slice(2)}`
   return digits
 }
 
-function buildAccept(allowed: unknown): string | undefined {
+export function buildAccept(allowed: unknown): string | undefined {
   if (Array.isArray(allowed)) {
     const list = allowed.map((t) => `.${String(t)}`).join(',')
     return list || undefined
@@ -85,13 +85,13 @@ function buildAccept(allowed: unknown): string | undefined {
   return undefined
 }
 
-function formatSize(bytes: number): string {
+export function formatSize(bytes: number): string {
   if (bytes >= 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
   if (bytes >= 1024) return `${Math.round(bytes / 1024)} KB`
   return `${bytes} B`
 }
 
-function fileExt(name: string): string {
+export function fileExt(name: string): string {
   const i = name.lastIndexOf('.')
   return i === -1 ? 'FILE' : name.slice(i + 1).toUpperCase().slice(0, 8)
 }
@@ -252,7 +252,7 @@ interface AudioCompanionProps {
   onTranscription: (text: string) => void
 }
 
-function AudioCompanion({ maxDurationSecs = 60, onRecorded, onCleared, onTranscription }: AudioCompanionProps) {
+export function AudioCompanion({ maxDurationSecs = 60, onRecorded, onCleared, onTranscription }: AudioCompanionProps) {
   const [status, setStatus] = useState<'empty' | 'recording' | 'transcribing' | 'recorded' | 'error'>('empty')
   const [elapsed, setElapsed] = useState(0)
   const [duration, setDuration] = useState(0)
@@ -450,7 +450,7 @@ function AudioCompanion({ maxDurationSecs = 60, onRecorded, onCleared, onTranscr
 
 /* ── Ranking ──────────────────────────────────────────────── */
 
-function RankingQuestion({
+export function RankingQuestion({
   options,
   value,
   onChange,
@@ -462,6 +462,15 @@ function RankingQuestion({
   const order = Array.isArray(value) && value.length === options.length ? value : options
   const dragIndexRef = useRef<number | null>(null)
   const [overIndex, setOverIndex] = useState<number | null>(null)
+
+  const move = (from: number, delta: number) => {
+    const to = from + delta
+    if (to < 0 || to >= order.length) return
+    const next = [...order]
+    const [item] = next.splice(from, 1)
+    next.splice(to, 0, item)
+    onChange(next)
+  }
 
   const dropAt = (target: number) => (e: DragEvent<HTMLDivElement>) => {
     e.preventDefault()
@@ -494,6 +503,7 @@ function RankingQuestion({
             onDragStart={(e) => {
               dragIndexRef.current = i
               e.dataTransfer.effectAllowed = 'move'
+              e.dataTransfer.setData('text/plain', String(i))
             }}
             onDragEnd={() => {
               dragIndexRef.current = null
@@ -504,6 +514,26 @@ function RankingQuestion({
             <span className="rank-grip">⠿</span>
             <span className="rank-num">{i + 1}</span>
             <span className="rank-label">{label}</span>
+            <span className="rank-move">
+              <button
+                type="button"
+                className="rank-move-btn"
+                aria-label={`Mover "${label}" para cima`}
+                disabled={i === 0}
+                onClick={() => move(i, -1)}
+              >
+                ↑
+              </button>
+              <button
+                type="button"
+                className="rank-move-btn"
+                aria-label={`Mover "${label}" para baixo`}
+                disabled={i === order.length - 1}
+                onClick={() => move(i, 1)}
+              >
+                ↓
+              </button>
+            </span>
           </div>
         </Fragment>
       ))}
@@ -522,7 +552,7 @@ function RankingQuestion({
 
 /* ── Matriz ───────────────────────────────────────────────── */
 
-function MatrixQuestion({
+export function MatrixQuestion({
   rows,
   cols,
   value,
@@ -597,7 +627,7 @@ function MatrixQuestion({
 
 /* ── Lista dinâmica ───────────────────────────────────────── */
 
-function DynListQuestion({
+export function DynListQuestion({
   value,
   suggestions,
   placeholder,
@@ -674,7 +704,7 @@ function DynListQuestion({
 
 /* ── Upload de arquivo ────────────────────────────────────── */
 
-function FileQuestion({
+export function FileQuestion({
   accept,
   value,
   onChange,

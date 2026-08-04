@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
+import type { CSSProperties } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { ArrowClockwise, CheckCircle, Sparkle, Warning, X } from '@phosphor-icons/react'
+import { ArrowClockwise, CheckCircle, Eye, Sparkle, Warning, X } from '@phosphor-icons/react'
 import QuestionCard from '../components/QuestionCard'
 import { ai, surveys } from '../lib/api'
 import type { Question } from '../lib/api'
@@ -53,6 +54,33 @@ function Spinner({ size = 14 }: { size?: number }) {
     />
   )
 }
+
+const btnFlex: CSSProperties = { display: 'inline-flex', alignItems: 'center', gap: 6 }
+
+const submitStickyStyle: CSSProperties = {
+  position: 'sticky',
+  bottom: 0,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  gap: 12,
+  background: 'var(--card)',
+  borderTop: '1px solid var(--line)',
+  padding: '14px 16px',
+  marginTop: 20,
+  boxShadow: '0 -4px 16px rgba(0,0,0,.06)',
+}
+
+const nCountStyle: CSSProperties = {
+  fontFamily: 'var(--mono)',
+  fontSize: '.7rem',
+  letterSpacing: '.05em',
+  textTransform: 'uppercase',
+  color: 'var(--muted)',
+  whiteSpace: 'nowrap',
+}
+
+const nActionsStyle: CSSProperties = { display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }
 
 function Toast({ message, isError }: { message: string; isError: boolean }) {
   return (
@@ -230,6 +258,34 @@ export default function Builder() {
     }
   }
 
+  const goPreview = async () => {
+    if (saving) return
+    setSaving(true)
+    try {
+      let surveyId = store.id
+      const payload = { title: store.title.trim() || 'Sem título', questions: store.questions }
+      if (surveyId) {
+        await surveys.update(surveyId, payload)
+      } else {
+        const created = await surveys.create(payload)
+        surveyId = created.id ?? null
+        store.setId(surveyId)
+      }
+      if (!surveyId) throw new Error('Sem id de questionário')
+      lastSavedRef.current = { title: store.title, questions: JSON.stringify(store.questions) }
+      navigate(`/preview/${surveyId}`)
+    } catch (err) {
+      if (isAuthError(err)) {
+        showToast('Faça login para salvar', true)
+        navigate('/auth')
+      } else {
+        showToast('Erro ao salvar. Tente novamente.', true)
+      }
+    } finally {
+      setSaving(false)
+    }
+  }
+
   const generateFromIntent = async () => {
     if (!intent || aiBusy) return
     setAiBusy(true)
@@ -349,7 +405,7 @@ export default function Builder() {
           </div>
         </div>
 
-        <div className="body" ref={bodyRef}>
+        <div className="body" ref={bodyRef} style={{ paddingBottom: 80 }}>
           {store.questions.length === 0 ? (
             <div
               style={{
@@ -389,6 +445,28 @@ export default function Builder() {
           <button type="button" className="btn-sm" style={{ alignSelf: 'flex-start' }} onClick={addQuestion}>
             + Pergunta
           </button>
+        </div>
+
+        <div className="submit-sticky" style={submitStickyStyle}>
+          <span style={nCountStyle}>
+            {store.questions.length} {store.questions.length === 1 ? 'pergunta' : 'perguntas'}
+          </span>
+          <div style={nActionsStyle}>
+            <button type="button" className="btn-sm" disabled={saving} onClick={() => void goPreview()} style={btnFlex}>
+              <Eye size={14} />
+              Preview
+            </button>
+            <button
+              type="button"
+              className="btn-sm primary"
+              disabled={saving}
+              onClick={() => void saveAndSend()}
+              style={btnFlex}
+            >
+              {saving ? <Spinner size={11} /> : null}
+              {saving ? 'Enviando…' : 'Enviar →'}
+            </button>
+          </div>
         </div>
       </div>
 

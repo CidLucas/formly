@@ -18,6 +18,16 @@ export interface SurveyData {
   brand_colors?: any
 }
 
+export interface DistributeResult {
+  status: string
+  total: number
+  sent: number
+  failed: number
+  mode: 'simulated' | 'real'
+  public_link?: string
+  message: string
+}
+
 export interface Contact {
   id: string
   name: string
@@ -61,11 +71,13 @@ export async function api<T>(path: string, options?: ApiRequestInit): Promise<T>
 
 // Surveys
 export const surveys = {
-  list: () => api<SurveyData[]>('/surveys'),
+  list: () => api<SurveyData[]>('/surveys/'),
   get: (id: string) => api<SurveyData>(`/surveys/${id}`),
-  create: (data: SurveyData) => api<SurveyData>('/surveys', { method: 'POST', body: JSON.stringify(data) }),
+  create: (data: SurveyData) => api<SurveyData>('/surveys/', { method: 'POST', body: JSON.stringify(data) }),
   update: (id: string, data: Partial<SurveyData>) => api<SurveyData>(`/surveys/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
   publish: (id: string) => api<{ slug: string; url: string }>(`/surveys/${id}/publish`, { method: 'POST' }),
+  distribute: (id: string, data: { contact_ids: string[]; emails: string[]; message?: string }) =>
+    api<DistributeResult>(`/surveys/${id}/distribute`, { method: 'POST', body: JSON.stringify(data) }),
   stats: (id: string) => api<any>(`/surveys/${id}/stats`),
   responses: (id: string, params?: string) => api<any>(`/surveys/${id}/responses${params ? `?${params}` : ''}`),
   exportCsv: async (id: string): Promise<Blob> => {
@@ -105,8 +117,8 @@ export const publicApi = {
 
 // Contacts
 export const contacts = {
-  list: () => api<Contact[]>('/contacts'),
-  create: (data: Partial<Contact>) => api<Contact>('/contacts', { method: 'POST', body: JSON.stringify(data) }),
+  list: () => api<Contact[]>('/contacts/'),
+  create: (data: Partial<Contact>) => api<Contact>('/contacts/', { method: 'POST', body: JSON.stringify(data) }),
   update: (id: string, data: Partial<Contact>) => api<Contact>(`/contacts/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
   remove: (id: string) => api<any>(`/contacts/${id}`, { method: 'DELETE' }),
 }

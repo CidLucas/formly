@@ -402,6 +402,16 @@ h1 { font-size: clamp(1.5rem,4vw,2rem); margin: .35rem 0 .15rem; }
   border-radius: 50%; display: grid; place-items: center; flex-shrink: 0;
 }
 .rank-label { flex: 1; font-size: .95rem; }
+.rank-move { display: flex; gap: 4px; align-items: center; flex-shrink: 0; }
+.rank-move-btn {
+  font-family: var(--mono); font-size: .8rem; line-height: 1;
+  width: 1.55rem; height: 1.55rem; display: grid; place-items: center;
+  border: 1px solid var(--line); border-radius: var(--radius-sm);
+  background: var(--card); color: var(--muted); cursor: pointer;
+  touch-action: manipulation; transition: all .15s ease;
+}
+.rank-move-btn:hover:not(:disabled) { border-color: var(--wine); color: var(--wine); }
+.rank-move-btn:disabled { opacity: .25; cursor: default; }
 .rank-drop-zone {
   height: 3px; background: var(--wine); margin: .2rem 0; border-radius: 1px;
   opacity: 0; transition: opacity .15s ease;
@@ -1068,6 +1078,8 @@ h1 { font-size: clamp(1.5rem,4vw,2rem); margin: .35rem 0 .15rem; }
 /* ─── Media queries ──────────────────────────────────────── */
 @media (max-width: 600px) {
   .app { padding: var(--l) var(--m); }
+  .rank-move { gap: 2px; }
+  .rank-move-btn { width: 1.4rem; height: 1.4rem; }
   .nps-row { flex-wrap: wrap; gap: 4px; justify-content: center; }
   .nps-dot { width: 30px; height: 30px; font-size: 0.65rem; }
   .likert-dot { width: 26px; height: 26px; }
