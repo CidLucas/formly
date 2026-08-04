@@ -395,6 +395,7 @@ h1 { font-size: clamp(1.5rem,4vw,2rem); margin: .35rem 0 .15rem; }
 .rank-item:hover { border-color: var(--wine); }
 .rank-item.dragging { opacity: .5; box-shadow: 0 4px 16px rgba(0,0,0,.12); border-color: var(--wine); }
 .rank-item:active { cursor: grabbing; opacity: .8; }
+.rank-item.drop-target { border-color: var(--pine); box-shadow: 0 0 0 2px var(--pine-soft); }
 .rank-grip { font-family: var(--mono); font-size: .7rem; color: var(--muted); cursor: grab; }
 .rank-num {
   font-family: var(--mono); font-size: .62rem; color: var(--wine);

@@ -1,4 +1,4 @@
-import { Fragment, useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { CSSProperties, DragEvent, FocusEvent } from 'react'
 import { useParams } from 'react-router-dom'
 import { ArrowClockwise, ArrowLeft, ArrowRight, Check, Play, Warning } from '@phosphor-icons/react'
@@ -472,70 +472,68 @@ export function RankingQuestion({
     onChange(next)
   }
 
+  // Soltar SOBRE um item: insere o arrastado na posição do alvo.
   const dropAt = (target: number) => (e: DragEvent<HTMLDivElement>) => {
     e.preventDefault()
+    e.stopPropagation()
     const from = dragIndexRef.current
     dragIndexRef.current = null
     setOverIndex(null)
     if (from === null || from === target) return
     const next = [...order]
     const [item] = next.splice(from, 1)
-    next.splice(from < target ? target - 1 : target, 0, item)
+    next.splice(target, 0, item)
     onChange(next)
   }
 
   return (
     <div className="rank-list">
       {order.map((label, i) => (
-        <Fragment key={`${i}-${label}`}>
-          <div
-            className={`rank-drop-zone ${overIndex === i ? 'active' : ''}`}
-            onDragOver={(e) => {
-              e.preventDefault()
-              setOverIndex(i)
-            }}
-            onDragLeave={() => setOverIndex((v) => (v === i ? null : v))}
-            onDrop={dropAt(i)}
-          />
-          <div
-            className={`rank-item ${dragIndexRef.current === i ? 'dragging' : ''}`}
-            draggable
-            onDragStart={(e) => {
-              dragIndexRef.current = i
-              e.dataTransfer.effectAllowed = 'move'
-              e.dataTransfer.setData('text/plain', String(i))
-            }}
-            onDragEnd={() => {
-              dragIndexRef.current = null
-              setOverIndex(null)
-            }}
-            onDragOver={(e) => e.preventDefault()}
-          >
-            <span className="rank-grip">⠿</span>
-            <span className="rank-num">{i + 1}</span>
-            <span className="rank-label">{label}</span>
-            <span className="rank-move">
-              <button
-                type="button"
-                className="rank-move-btn"
-                aria-label={`Mover "${label}" para cima`}
-                disabled={i === 0}
-                onClick={() => move(i, -1)}
-              >
-                ↑
-              </button>
-              <button
-                type="button"
-                className="rank-move-btn"
-                aria-label={`Mover "${label}" para baixo`}
-                disabled={i === order.length - 1}
-                onClick={() => move(i, 1)}
-              >
-                ↓
-              </button>
-            </span>
-          </div>
-        </Fragment>
+        <div
+          key={`${i}-${label}`}
+          className={`rank-item ${overIndex === i ? 'drop-target' : ''}`}
+          draggable
+          onDragStart={(e) => {
+            dragIndexRef.current = i
+            e.dataTransfer.effectAllowed = 'move'
+            e.dataTransfer.setData('text/plain', String(i))
+          }}
+          onDragEnd={() => {
+            dragIndexRef.current = null
+            setOverIndex(null)
+          }}
+          onDragOver={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            if (dragIndexRef.current !== null && dragIndexRef.current !== i) setOverIndex(i)
+          }}
+          onDragLeave={() => setOverIndex((v) => (v === i ? null : v))}
+          onDrop={dropAt(i)}
+        >
+          <span className="rank-grip">⠿</span>
+          <span className="rank-num">{i + 1}</span>
+          <span className="rank-label">{label}</span>
+          <span className="rank-move">
+            <button
+              type="button"
+              className="rank-move-btn"
+              aria-label={`Mover "${label}" para cima`}
+              disabled={i === 0}
+              onClick={() => move(i, -1)}
+            >
+              ↑
+            </button>
+            <button
+              type="button"
+              className="rank-move-btn"
+              aria-label={`Mover "${label}" para baixo`}
+              disabled={i === order.length - 1}
+              onClick={() => move(i, 1)}
+            >
+              ↓
+            </button>
+          </span>
+        </div>
       ))}
       <div
         className={`rank-drop-zone ${overIndex === order.length ? 'active' : ''}`}
