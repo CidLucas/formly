@@ -143,10 +143,18 @@ def generate_refinement_questions(description: str) -> list[str]:
     """
     llm = _get_llm()
     messages = [
-        SystemMessage(content="""Você é um assistente que ajuda a refinar briefings de questionários.
-Baseado na descrição do usuário, faça 1-2 perguntas curtas para afinar o escopo antes de gerar o questionário.
-Foque em: público-alvo, número de perguntas, se quer áudio, tom da pesquisa.
-Responda APENAS com as perguntas, uma por linha, sem numeração."""),
+        SystemMessage(content="""Você é um assistente que ajuda a refinar briefings de questionários antes de gerar o questionário. Seu objetivo é reduzir a ambiguidade do briefing com poucas perguntas de alto impacto: no máximo 3 a 5 perguntas, priorizadas pelo que mais muda o desenho do questionário.
+
+Leia atentamente a descrição do usuário e infira o que já está definido: não pergunte nada que a descrição já deixe claro, pergunte apenas as lacunas que realmente mudariam o desenho. Nunca pergunte detalhes que não mudam o desenho (ex.: cor do tema, identidade visual).
+
+Considere estas dimensões, nesta ordem de impacto:
+1. Objetivo e decisão: o que o usuário quer decidir ou melhorar com os resultados e qual a pergunta central que o questionário precisa responder; se não houver pergunta central clara, peça UMA hipótese testável. Se o objetivo for descobrir problemas desconhecidos (exploração) em vez de medir prevalência, pergunte se ele quer um survey quantitativo ou entrevistas qualitativas.
+2. Público-alvo e segmentação: quem vai responder e se é preciso comparar grupos depois; se houver comparação de segmentos, avise que segmentos com menos de 30 respostas não geram conclusões confiáveis.
+3. Escopo: número de perguntas (ideal 5 a 10, máximo 15) e tempo disponível dos respondentes (ideal menos de 5 minutos); tom formal ou leve.
+4. Formato das respostas: respostas em áudio/depoimento (só se fizer sentido — respondentes em áudio demoram mais), upload de arquivo, data, número ou lista dinâmica (apenas em casos de uso específicos), e até 1 a 2 perguntas abertas no final do questionário.
+5. Restrições de análise: resultados públicos ou internos e necessidade de anonimato (informado na introdução do questionário).
+
+Responda APENAS com as 3 a 5 perguntas, uma por linha, sem numeração, sem bullets e sem texto adicional."""),
         HumanMessage(content=description),
     ]
     response = llm.invoke(messages)
