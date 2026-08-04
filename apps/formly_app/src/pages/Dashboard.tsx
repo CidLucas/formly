@@ -42,6 +42,25 @@ interface StatsData {
   completion_rate: number
   audio_responses: number
   avg_scale: number | null
+  avg_time_secs?: number | null
+  response_rate?: number | null
+  nps?: { score: number | null; promoters: number; passives: number; detractors: number; n: number } | null
+  csat?: { pct_top: number | null; scale: number; n: number } | null
+  ces?: { pct_top: number | null; scale: number; n: number } | null
+  by_question?: QuestionStats[] | null
+  low_n_warning?: boolean
+}
+
+interface QuestionStats {
+  question_id: string
+  type: string
+  title: string
+  n: number
+  distribution: Record<string, number> | null
+  avg: number | null
+  nps_score?: number | null
+  top2_pct?: number | null
+  open_text_samples?: string[]
 }
 
 interface AnswerEntry {
@@ -71,7 +90,19 @@ function asStrings(value: unknown): string[] {
 
 /* ── Barra (analytics.html) ───────────────────────────────── */
 
-function BarRow({ label, pct, animate, right }: { label: string; pct: number; animate: boolean; right?: ReactNode }) {
+function BarRow({
+  label,
+  pct,
+  animate,
+  right,
+  fillColor,
+}: {
+  label: string
+  pct: number
+  animate: boolean
+  right?: ReactNode
+  fillColor?: string
+}) {
   const width = animate ? `${Math.min(100, Math.max(0, pct))}%` : '0%'
   return (
     <div className="bar-row">
@@ -83,10 +114,149 @@ function BarRow({ label, pct, animate, right }: { label: string; pct: number; an
         {label}
       </span>
       <div className="bar-track">
-        <div className="bar-fill" style={{ width }} />
+        <div className="bar-fill" style={{ width, ...(fillColor ? { background: fillColor } : {}) }} />
       </div>
       <span className="bar-val">{Math.round(pct)}%</span>
       {right}
+    </div>
+  )
+}
+
+function npsScoreColor(score: number): string {
+  if (score >= 50) return 'var(--ok)'
+  if (score >= 0) return 'var(--wine)'
+  return 'var(--urg)'
+}
+
+function LowNBadge() {
+  return (
+    <span
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 4,
+        padding: '2px 8px',
+        borderRadius: 'var(--r)',
+        background: 'color-mix(in srgb, var(--urg) 10%, transparent)',
+        border: '1px solid var(--urg)',
+        color: 'var(--urg)',
+        fontSize: 10.5,
+        fontWeight: 600,
+        letterSpacing: 0.3,
+        textTransform: 'uppercase',
+        verticalAlign: 'middle',
+      }}
+    >
+      <Warning size={11} weight="fill" />
+      dados insuficientes
+    </span>
+  )
+}
+
+function MatrixHeatmap({
+  distribution,
+  rows,
+  cols,
+}: {
+  distribution: Record<string, number>
+  rows: string[]
+  cols: string[]
+}) {
+  const maxCount = Math.max(1, ...Object.values(distribution))
+  return (
+    <div className="matrix-wrap">
+      <table className="matrix">
+        <thead>
+          <tr>
+            <th />
+            {cols.map((c) => (
+              <th key={c}>{c}</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r) => (
+            <tr key={r}>
+              <td style={{ fontWeight: 600 }}>{r}</td>
+              {cols.map((c) => {
+                const count = distribution[`${r}:${c}`] ?? 0
+                const intensity = count / maxCount
+                return (
+                  <td
+                    key={c}
+                    style={{
+                      background:
+                        count > 0
+                          ? `color-mix(in srgb, var(--wine) ${Math.round(intensity * 60)}%, var(--card))`
+                          : 'transparent',
+                      color: count > 0 ? (intensity > 0.45 ? '#fff' : 'var(--ink)') : 'var(--muted)',
+                      fontSize: 13,
+                    }}
+                  >
+                    {count > 0 ? count : '·'}
+                  </td>
+                )
+              })}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
+function RankingOrder({ options, entries }: { options: string[]; entries: AnswerEntry[] }) {
+  const sum = new Map<string, number>()
+  const count = new Map<string, number>()
+  for (const { answer } of entries) {
+    const choices = asStrings(answer.value_choices)
+    if (choices.length === 0) continue
+    choices.forEach((c, i) => {
+      sum.set(c, (sum.get(c) ?? 0) + i)
+      count.set(c, (count.get(c) ?? 0) + 1)
+    })
+  }
+  const rows = options
+    .map((o) => {
+      const c = count.get(o) ?? 0
+      return { label: o, avg: c > 0 ? (sum.get(o) ?? 0) / c + 1 : null, count: c }
+    })
+    .sort((a, b) => {
+      if (a.avg == null && b.avg == null) return 0
+      if (a.avg == null) return 1
+      if (b.avg == null) return -1
+      return a.avg - b.avg
+    })
+  if (rows.every((r) => r.count === 0)) {
+    return <div style={{ color: 'var(--muted)', fontSize: 13 }}>Sem respostas para esta pergunta.</div>
+  }
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+      {rows.map((r, i) => (
+        <div
+          key={r.label}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 10,
+            padding: '8px 12px',
+            borderRadius: 'var(--r)',
+            border: '1px solid var(--line)',
+            background: 'var(--card)',
+          }}
+        >
+          <span className="rank-num">{i + 1}</span>
+          <span
+            style={{ flex: 1, fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+            title={r.label}
+          >
+            {r.label}
+          </span>
+          <span className="mono" style={{ color: 'var(--muted)', fontSize: '0.66rem' }}>
+            {r.avg != null ? `pos. média ${r.avg.toFixed(1)}` : 'sem ranking'} · n={r.count}
+          </span>
+        </div>
+      ))}
     </div>
   )
 }
@@ -227,13 +397,181 @@ function QuestionSection({
   question,
   entries,
   animate,
+  stats,
 }: {
   question: Question
   entries: AnswerEntry[]
   animate: boolean
+  stats?: QuestionStats
 }) {
   const config = question.config ?? {}
 
+  // NPS — barras 0-10 com corte promotores/neutros/detratores
+  if (question.type === 'nps') {
+    if (stats?.distribution) {
+      const rows = Object.entries(stats.distribution)
+        .map(([k, v]) => ({ value: Number(k), count: v }))
+        .sort((a, b) => a.value - b.value)
+      return (
+        <>
+          <div
+            style={{
+              display: 'flex',
+              gap: 12,
+              alignItems: 'baseline',
+              marginBottom: 8,
+              fontSize: 12.5,
+              color: 'var(--muted)',
+            }}
+          >
+            {stats.nps_score != null ? (
+              <span>
+                NPS{' '}
+                <strong style={{ color: npsScoreColor(stats.nps_score), fontSize: 16 }}>{stats.nps_score}</strong>
+              </span>
+            ) : null}
+            <span>média {stats.avg ?? '—'}</span>
+            <span>n={stats.n}</span>
+          </div>
+          <div className="bar-list">
+            {rows.map(({ value, count }) => (
+              <BarRow
+                key={value}
+                label={String(value)}
+                pct={stats.n > 0 ? (count / stats.n) * 100 : 0}
+                animate={animate}
+                fillColor={value <= 6 ? 'var(--urg)' : value <= 8 ? 'var(--muted)' : 'var(--ok)'}
+                right={
+                  <span className="mono" style={{ width: 64, color: 'var(--muted)', fontSize: '0.66rem' }}>
+                    {count}
+                  </span>
+                }
+              />
+            ))}
+          </div>
+          <div style={{ display: 'flex', gap: 12, marginTop: 8, fontSize: 11.5, color: 'var(--muted)' }}>
+            <span>
+              <span style={{ color: 'var(--urg)' }}>■</span> Detratores 0-6
+            </span>
+            <span>
+              <span style={{ color: 'var(--muted)' }}>■</span> Neutros 7-8
+            </span>
+            <span>
+              <span style={{ color: 'var(--ok)' }}>■</span> Promotores 9-10
+            </span>
+          </div>
+        </>
+      )
+    }
+    const min = Number(config.min) || 0
+    const max = Number(config.max) || 10
+    const counts = new Map<number, number>()
+    for (let v = min; v <= max; v++) counts.set(v, 0)
+    let answered = 0
+    for (const { answer } of entries) {
+      if (answer.scale_value != null) {
+        answered++
+        counts.set(answer.scale_value, (counts.get(answer.scale_value) ?? 0) + 1)
+      }
+    }
+    const rows = [...counts.entries()].map(([value, count]) => ({ label: String(value), count }))
+    return <Bars rows={rows} answered={answered} animate={animate} />
+  }
+
+  // Scale — distribuição completa
+  if (question.type === 'scale') {
+    if (stats?.distribution) {
+      const rows = Object.entries(stats.distribution)
+        .map(([k, v]) => ({ label: k, count: v }))
+        .sort((a, b) => Number(a.label) - Number(b.label))
+      return (
+        <>
+          <div
+            style={{
+              display: 'flex',
+              gap: 12,
+              alignItems: 'baseline',
+              marginBottom: 8,
+              fontSize: 12.5,
+              color: 'var(--muted)',
+            }}
+          >
+            <span>
+              média <strong style={{ color: 'var(--ink)' }}>{stats.avg ?? '—'}</strong>
+            </span>
+            {stats.top2_pct != null ? (
+              <span>
+                top 2 <strong style={{ color: 'var(--ink)' }}>{Math.round(stats.top2_pct * 100)}%</strong>
+              </span>
+            ) : null}
+            <span>n={stats.n}</span>
+          </div>
+          <Bars rows={rows} answered={stats.n} animate={animate} />
+        </>
+      )
+    }
+    const min = Number(config.min) || 1
+    const max = Number(config.max) || 5
+    const counts = new Map<number, number>()
+    for (let v = min; v <= max; v++) counts.set(v, 0)
+    let answered = 0
+    for (const { answer } of entries) {
+      if (answer.scale_value != null) {
+        answered++
+        counts.set(answer.scale_value, (counts.get(answer.scale_value) ?? 0) + 1)
+      }
+    }
+    const rows = [...counts.entries()].map(([value, count]) => ({ label: String(value), count }))
+    return <Bars rows={rows} answered={answered} animate={animate} />
+  }
+
+  // Matrix — heatmap linhas × colunas
+  if (question.type === 'matrix') {
+    const rows = asStrings(config.rows)
+    const cols = asStrings(config.columns)
+    if (stats?.distribution && rows.length > 0 && cols.length > 0) {
+      return <MatrixHeatmap distribution={stats.distribution} rows={rows} cols={cols} />
+    }
+    const rowCount = new Map<string, number>()
+    let answered = 0
+    for (const { answer } of entries) {
+      const choices = asStrings(answer.value_choices)
+      if (choices.length > 0) {
+        answered++
+        for (const sel of choices) {
+          const idx = sel.indexOf(':')
+          const row = idx === -1 ? sel : sel.slice(0, idx)
+          if (rows.includes(row)) rowCount.set(row, (rowCount.get(row) ?? 0) + 1)
+        }
+      }
+    }
+    const barRows = rows.map((r) => ({ label: r, count: rowCount.get(r) ?? 0 }))
+    return <Bars rows={barRows} answered={answered} animate={animate} />
+  }
+
+  // Ranking — ordem média dos itens
+  if (question.type === 'ranking') {
+    return <RankingOrder options={asStrings(config.options)} entries={entries} />
+  }
+
+  // dyn_list — frequência por item
+  if (question.type === 'dyn_list') {
+    const counts = new Map<string, number>()
+    let answered = 0
+    for (const { answer } of entries) {
+      const choices = asStrings(answer.value_choices)
+      if (choices.length > 0) {
+        answered++
+        for (const c of choices) counts.set(c, (counts.get(c) ?? 0) + 1)
+      }
+    }
+    const rows = [...counts.entries()]
+      .map(([label, count]) => ({ label, count }))
+      .sort((a, b) => b.count - a.count)
+    return <Bars rows={rows} answered={answered} animate={animate} />
+  }
+
+  // Múltipla escolha
   if (question.type === 'multiple_choice') {
     const options = asStrings(config.options)
     const counts = new Map<string, number>()
@@ -266,59 +604,23 @@ function QuestionSection({
     return <Bars rows={rows} answered={answered} animate={animate} />
   }
 
-  if (question.type === 'scale' || question.type === 'nps') {
-    const min = question.type === 'nps' ? Number(config.min) || 0 : Number(config.min) || 1
-    const max = question.type === 'nps' ? Number(config.max) || 10 : Number(config.max) || 5
-    const counts = new Map<number, number>()
-    for (let v = min; v <= max; v++) counts.set(v, 0)
-    let answered = 0
-    for (const { answer } of entries) {
-      if (answer.scale_value != null) {
-        answered++
-        counts.set(answer.scale_value, (counts.get(answer.scale_value) ?? 0) + 1)
-      }
-    }
-    const rows: { label: string; count: number }[] = []
-    counts.forEach((count, value) => rows.push({ label: String(value), count }))
-    return <Bars rows={rows} answered={answered} animate={animate} />
-  }
-
-  if (question.type === 'ranking') {
-    const options = asStrings(config.options)
-    const counts = new Map<string, number>()
-    let answered = 0
-    for (const { answer } of entries) {
-      const choices = asStrings(answer.value_choices)
-      if (choices.length > 0) {
-        answered++
-        for (const c of choices) counts.set(c, (counts.get(c) ?? 0) + 1)
-      }
-    }
-    const rows = options.map((o) => ({ label: o, count: counts.get(o) ?? 0 }))
-    return <Bars rows={rows} answered={answered} animate={animate} />
-  }
-
-  if (question.type === 'matrix') {
-    const rows = asStrings(config.rows)
-    const rowCount = new Map<string, number>()
-    let answered = 0
-    for (const { answer } of entries) {
-      const choices = asStrings(answer.value_choices)
-      if (choices.length > 0) {
-        answered++
-        for (const sel of choices) {
-          const idx = sel.indexOf(':')
-          const row = idx === -1 ? sel : sel.slice(0, idx)
-          if (rows.includes(row)) rowCount.set(row, (rowCount.get(row) ?? 0) + 1)
-        }
-      }
-    }
-    const barRows = rows.map((r) => ({ label: r, count: rowCount.get(r) ?? 0 }))
-    return <Bars rows={barRows} answered={answered} animate={animate} />
-  }
-
+  // Áudio
   if (question.type === 'audio') {
     return <AudioList entries={entries} />
+  }
+
+  // Texto curto / longo — contagem + amostra de citações
+  if (question.type === 'text_short' || question.type === 'text_long') {
+    const samples =
+      stats?.open_text_samples ?? entries.map((e) => answerText(e.answer)).filter((t) => t.trim().length > 0)
+    return (
+      <>
+        <div style={{ fontSize: 12.5, color: 'var(--muted)', marginBottom: 8 }}>
+          {stats?.n ?? entries.length} resposta{stats && stats.n !== 1 ? 's' : ''} de texto
+        </div>
+        <TextList items={samples} />
+      </>
+    )
   }
 
   const items = entries.map((e) => answerText(e.answer)).filter(Boolean)
@@ -455,6 +757,16 @@ export default function Dashboard() {
     return times.reduce((s, v) => s + v, 0) / times.length
   }, [responses])
 
+  const avgTimeDisplay = stats?.avg_time_secs ?? avgTime
+
+  const statsByQuestion = useMemo(() => {
+    const map = new Map<string, QuestionStats>()
+    for (const q of stats?.by_question ?? []) {
+      if (q.question_id) map.set(q.question_id, q)
+    }
+    return map
+  }, [stats])
+
   const answersByQuestion = useMemo(() => {
     const map = new Map<string, AnswerEntry[]>()
     for (const r of responses) {
@@ -574,21 +886,79 @@ export default function Dashboard() {
               </button>
             </div>
 
+            {stats?.low_n_warning ? (
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  padding: '10px 14px',
+                  borderRadius: 'var(--r)',
+                  border: '1px solid var(--urg)',
+                  background: 'color-mix(in srgb, var(--urg) 8%, var(--card))',
+                  color: 'var(--urg)',
+                  fontSize: 12.5,
+                  marginBottom: 'var(--l)',
+                }}
+              >
+                <Warning size={16} weight="fill" />
+                <span>
+                  Algumas métricas têm N abaixo de 30 — os números indicam direção, não significância estatística.
+                </span>
+              </div>
+            ) : null}
+
             <div className="kpi-grid">
               <div className="kpi-card">
                 <div className="kpi-value">{total}</div>
                 <div className="kpi-label">Respostas</div>
                 {sentCount > 0 ? <div className="kpi-sub">de {sentCount} enviados</div> : null}
+                {stats?.response_rate != null ? (
+                  <div className="kpi-sub">taxa de resposta {Math.round(stats.response_rate * 100)}%</div>
+                ) : null}
               </div>
               <div className="kpi-card">
                 <div className="kpi-value">{Math.round(completionRate)}%</div>
                 <div className="kpi-label">Taxa de resposta</div>
               </div>
               <div className="kpi-card">
-                <div className="kpi-value">{avgTime != null ? formatDuration(avgTime) : '—'}</div>
+                <div className="kpi-value">{avgTimeDisplay != null ? formatDuration(avgTimeDisplay) : '—'}</div>
                 <div className="kpi-label">Tempo médio</div>
                 <div className="kpi-sub">por resposta</div>
               </div>
+              {stats?.nps && stats.nps.score != null ? (
+                <div className="kpi-card">
+                  <div className="kpi-value" style={{ color: npsScoreColor(stats.nps.score) }}>
+                    {stats.nps.score}
+                  </div>
+                  <div className="kpi-label">NPS</div>
+                  <div className="kpi-sub">
+                    P {stats.nps.promoters} · N {stats.nps.passives} · D {stats.nps.detractors} · n={stats.nps.n}
+                  </div>
+                </div>
+              ) : null}
+              {stats?.csat ? (
+                <div className="kpi-card">
+                  <div className="kpi-value">
+                    {stats.csat.pct_top != null ? `${Math.round(stats.csat.pct_top * 100)}%` : '—'}
+                  </div>
+                  <div className="kpi-label">CSAT</div>
+                  <div className="kpi-sub">
+                    escala {stats.csat.scale} · n={stats.csat.n}
+                  </div>
+                </div>
+              ) : null}
+              {stats?.ces ? (
+                <div className="kpi-card">
+                  <div className="kpi-value">
+                    {stats.ces.pct_top != null ? `${Math.round(stats.ces.pct_top * 100)}%` : '—'}
+                  </div>
+                  <div className="kpi-label">CES</div>
+                  <div className="kpi-sub">
+                    escala {stats.ces.scale} · n={stats.ces.n}
+                  </div>
+                </div>
+              ) : null}
             </div>
 
             <div>
@@ -597,16 +967,23 @@ export default function Dashboard() {
                 <div style={{ color: 'var(--muted)', fontSize: 13 }}>Nenhuma pergunta para exibir.</div>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--l)' }}>
-                  {questions.map((q) => (
-                    <div key={q.id ?? q.title}>
-                      <div className="section-title">{q.title || 'Sem título'}</div>
-                      <QuestionSection
-                        question={q}
-                        entries={answersByQuestion.get(q.id ?? '') ?? []}
-                        animate={animate}
-                      />
-                    </div>
-                  ))}
+                  {questions.map((q) => {
+                    const qstats = statsByQuestion.get(q.id ?? '')
+                    return (
+                      <div key={q.id ?? q.title}>
+                        <div className="section-title">
+                          {q.title || 'Sem título'}{' '}
+                          {qstats && qstats.n < 30 ? <LowNBadge /> : null}
+                        </div>
+                        <QuestionSection
+                          question={q}
+                          entries={answersByQuestion.get(q.id ?? '') ?? []}
+                          animate={animate}
+                          stats={qstats}
+                        />
+                      </div>
+                    )
+                  })}
                 </div>
               )}
             </div>
