@@ -1,43 +1,37 @@
-# Formly
+# Formly — este repositório é legado
 
-> Fábrica de questionários com áudio e IA
+> **O desenvolvimento do Formly acontece no monorepo:**
+> **[CidLucas/monorepo → `produtos/formly`](https://github.com/CidLucas/monorepo/tree/main/produtos/formly)**
 
-## Stack
+Este repositório está **arquivado** (somente leitura) desde 2026-08-12.
 
-| Camada | Tecnologia |
+## Por quê
+
+O deploy do Formly roda do monorepo — `produtos/formly`, a partir da `main` —
+desde a migração. O que está aqui parou em 2026-08-04 e diverge do que está no
+ar em pontos que enganam quem lê:
+
+- tem um `dev-login` que **não existe mais** (removido em 2026-08-06: era um
+  emissor de token HS256 dentro de um serviço que só deveria verificar
+  assinatura do Supabase);
+- as rotas são as antigas — o produto atual tem `/painel`, `/s/:slug`,
+  `/dashboard/:id`, cota de plano, briefing por IA e Supabase próprio;
+- a estrutura é outra (`apps/formly_app` + `services/formly`).
+
+Duas fontes de verdade custaram uma auditoria de produto navegando os dois
+repositórios para descobrir qual era a versão real — com o deploy à frente e o
+repositório de referência atrás. Um contribuidor novo clonaria o errado.
+
+## Onde está cada coisa agora
+
+| O que era daqui | Onde está |
 |---|---|
-| Frontend | Vite + React 18 + Blu DS (CSS tokens) + Zustand + React Query |
-| Backend | FastAPI (Python) |
-| Banco | PostgreSQL (Supabase) |
-| Arquivos | S3 / Cloudflare R2 |
-| Transcrição | Groq Whisper |
-| LLM | OCI GenAI / Groq |
-| Auth | Supabase Auth |
+| `apps/formly_app` | [`produtos/formly/frontend`](https://github.com/CidLucas/monorepo/tree/main/produtos/formly/frontend) |
+| `services/formly` | [`produtos/formly/src/formly`](https://github.com/CidLucas/monorepo/tree/main/produtos/formly/src/formly) |
+| `docs/`, `PLANO.md` | [`produtos/formly/docs`](https://github.com/CidLucas/monorepo/tree/main/produtos/formly/docs) |
+| Issues e dívida técnica | [Issues do monorepo](https://github.com/CidLucas/monorepo/issues) |
 
-## Estrutura (monorepo)
+O histórico de commits fica aqui, intacto — é por isso que o repositório foi
+arquivado em vez de apagado.
 
-```
-formly/
-├── apps/
-│   └── formly_app/       # Frontend — Vite + React 18 + Blu DS
-│       ├── src/
-│       │   ├── pages/     # Builder, Survey, Dashboard
-│       │   ├── components/# Componentes reutilizáveis
-│       │   └── lib/       # API client, hooks, utils
-│       └── ...
-├── services/
-│   └── formly/            # Backend — FastAPI
-│       ├── app/
-│       │   ├── api/       # Rotas
-│       │   ├── models/    # SQLAlchemy
-│       │   └── services/  # Lógica de negócio
-│       └── ...
-├── docs/                  # Documentação do projeto
-└── PLANO.md               # Plano de implementação
-```
-
-## Links
-
-- [PLANO.md](./PLANO.md) — Fases, workstreams, decisões
-- [Docs no hub](https://github.com/CidLucas/projetos/tree/main/formly) — Requisitos e arquitetura
-- [Google Doc (escopo)](https://docs.google.com/document/d/1V539iHGWJq-4qMA30YS7FbRCo023rwYm7rwbMkfGhEw/edit)
+Referência: [issue #135](https://github.com/CidLucas/monorepo/issues/135).
